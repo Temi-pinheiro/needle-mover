@@ -68,20 +68,31 @@ export function createLinearClient(apiKey: string): LinearClient {
   };
 }
 
-/** Walks a Linear connection to the end, one page at a time. */
-export async function paginate<TNode>(
+/** The shape every Linear paginated field returns. */
+export type Connection<TNode> = {
+  nodes: TNode[];
+  pageInfo: { hasNextPage: boolean; endCursor: string | null };
+};
+
+/**
+ * Walks a Linear connection to the end, one page at a time.
+ *
+ * Both type parameters are inferred from `select`, so a caller writes
+ * `paginate(client, Q, vars, (d: { issues: Connection<IssueNode> }) => d.issues)`
+ * and gets `IssueNode[]` back with no casts.
+ */
+export async function paginate<TData, TNode>(
   client: LinearClient,
   query: string,
   variables: Record<string, unknown>,
-  select: (data: never) => { nodes: TNode[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } },
+  select: (data: TData) => Connection<TNode>,
   maxPages = 20,
 ): Promise<TNode[]> {
   const out: TNode[] = [];
   let after: string | null = null;
 
   for (let page = 0; page < maxPages; page++) {
-    const data = await client.request<never>(query, { ...variables, after });
-    const connection = select(data);
+    const connection = select(await client.request<TData>(query, { ...variables, after }));
     out.push(...connection.nodes);
     if (!connection.pageInfo.hasNextPage || !connection.pageInfo.endCursor) break;
     after = connection.pageInfo.endCursor;
