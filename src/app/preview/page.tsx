@@ -48,8 +48,8 @@ async function Preview({
     degraded: false,
     alsoToday: [
       { id: "a1", identifier: "MEN-201", title: "Reply to the Figma thread on onboarding copy", url: "#", ventureName: "Meridian", projectName: null, projectTarget: null, projectProgress: null },
-      { id: "a2", identifier: "ACM-88", title: "Send the revised statement of work", url: "#", ventureName: "Acme", projectName: null, projectTarget: null, projectProgress: null },
-      { id: "a3", identifier: "ACM-91", title: "Confirm the October workshop dates", url: "#", ventureName: "Acme", projectName: null, projectTarget: null, projectProgress: null },
+      { id: "a2", identifier: "NBD-88", title: "Send the revised statement of work", url: "#", ventureName: "Northbound", projectName: null, projectTarget: null, projectProgress: null },
+      { id: "a3", identifier: "NBD-91", title: "Confirm the October workshop dates", url: "#", ventureName: "Northbound", projectName: null, projectTarget: null, projectProgress: null },
     ],
   };
 
@@ -62,10 +62,10 @@ async function Preview({
       blockReason: "Waiting on the contract from legal",
       active: {
         id: "bk",
-        identifier: "ACM-12",
+        identifier: "NBD-12",
         title: "Draft the Q4 partner update",
         url: "https://linear.app",
-        ventureName: "Acme",
+        ventureName: "Northbound",
         projectName: null,
         projectTarget: null,
         projectProgress: null,

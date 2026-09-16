@@ -1,70 +1,82 @@
 @import "tailwindcss";
 
 /*
-  Editorial Luxury: warm paper ground, a high-contrast serif carrying the task
-  title, Geist for everything functional. Chosen because this screen is opened
-  at 7am every day — it should read as calm and considered, not as a cockpit.
+  Premium utilitarian minimalism: warm bone canvas, hairline structure, colour
+  used only where it carries meaning. The task title is set as editorial serif
+  against a geometric sans for everything functional.
+
+  Structure is flat by rule — 1px hairlines and crisp radii, never elevation.
+  Depth comes from typographic contrast and whitespace instead.
 */
 
 :root {
-  /* Layered neutrals rather than white-on-grey. */
-  --ground: #faf7f1;
-  --ground-deep: #f2ede3;
-  --surface: #fffdf9;
-  --surface-sunken: #f6f2ea;
+  --ground: #f7f6f3;
+  --ground-deep: #f1f0ec;
+  --surface: #ffffff;
+  --surface-sunken: #f9f9f8;
 
-  --ink: #1a1713;
-  --ink-soft: #4a443b;
-  --ink-muted: #837b6d;
-  --ink-faint: #a9a094;
+  /* Body text is charcoal, never pure black. */
+  --ink: #2f3437;
+  --ink-soft: #57595a;
+  --ink-muted: #787774;
+  --ink-faint: #9b9a97;
 
-  /* One accent, used only for the live task and its primary action. */
-  --accent: #2f5d50;
-  --accent-soft: #e4ece8;
-  --accent-ink: #f7fbf9;
+  /* The one structural border value. Everything uses it. */
+  --line: #eaeaea;
+  --line-strong: #dcdcdc;
 
-  --warn: #8a5a2b;
-  --warn-soft: #f6eddf;
+  /* Colour is scarce and semantic: washed pastels, never a saturated fill. */
+  --pale-green: #edf3ec;
+  --pale-green-ink: #346538;
+  --pale-yellow: #fbf3db;
+  --pale-yellow-ink: #956400;
+  --pale-red: #fdebec;
+  --pale-red-ink: #9f2f2d;
 
-  --hairline: rgb(26 23 19 / 0.08);
-  --hairline-strong: rgb(26 23 19 / 0.14);
+  /* Primary action is near-black, not a brand colour. */
+  --cta: #111111;
+  --cta-hover: #333333;
+  --cta-ink: #ffffff;
 
-  /* Diffused ambient depth — never a hard drop shadow. */
-  --lift: 0 1px 2px rgb(26 23 19 / 0.04), 0 8px 24px -12px rgb(26 23 19 / 0.14),
-    0 32px 64px -32px rgb(26 23 19 / 0.12);
-  --inner-light: inset 0 1px 0 rgb(255 255 255 / 0.9);
+  /* Barely-there. Used on hover only; never as resting elevation. */
+  --hover-lift: 0 2px 8px rgb(0 0 0 / 0.04);
 
-  /* Built-in easings are too weak to read as intentional. */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/*
+  The palette above commits to a warm paper canvas. Dark mode keeps the same
+  semantics — flat, hairline, scarce colour — rather than inverting into a
+  different design.
+*/
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #14120e;
-    --ground-deep: #0e0c09;
-    --surface: #1d1a15;
-    --surface-sunken: #171410;
+    --ground: #191918;
+    --ground-deep: #141413;
+    --surface: #1f1f1e;
+    --surface-sunken: #232322;
 
-    --ink: #f4efe5;
-    --ink-soft: #d3cbbd;
-    --ink-muted: #9b9284;
-    --ink-faint: #6d6558;
+    --ink: #e8e6e1;
+    --ink-soft: #c4c1ba;
+    --ink-muted: #928f88;
+    --ink-faint: #6e6b65;
 
-    --accent: #7fb3a1;
-    --accent-soft: #1f2e29;
-    --accent-ink: #0e1614;
+    --line: #2e2e2c;
+    --line-strong: #3d3d3a;
 
-    --warn: #d09a5e;
-    --warn-soft: #2a2117;
+    --pale-green: #1e2a1f;
+    --pale-green-ink: #9cc39f;
+    --pale-yellow: #2a2517;
+    --pale-yellow-ink: #d3ad6a;
+    --pale-red: #2c1c1d;
+    --pale-red-ink: #d79a99;
 
-    --hairline: rgb(244 239 229 / 0.1);
-    --hairline-strong: rgb(244 239 229 / 0.18);
+    --cta: #f0eeea;
+    --cta-hover: #d8d5cf;
+    --cta-ink: #171716;
 
-    --lift: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6),
-      0 32px 64px -32px rgb(0 0 0 / 0.7);
-    --inner-light: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    --hover-lift: 0 2px 8px rgb(0 0 0 / 0.3);
   }
 }
 
@@ -77,13 +89,17 @@
   --color-ink-soft: var(--ink-soft);
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-ink: var(--accent-ink);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-hairline: var(--hairline);
-  --color-hairline-strong: var(--hairline-strong);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-pale-green: var(--pale-green);
+  --color-pale-green-ink: var(--pale-green-ink);
+  --color-pale-yellow: var(--pale-yellow);
+  --color-pale-yellow-ink: var(--pale-yellow-ink);
+  --color-pale-red: var(--pale-red);
+  --color-pale-red-ink: var(--pale-red-ink);
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-cta-ink: var(--cta-ink);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -93,13 +109,15 @@
 body {
   background: var(--ground);
   color: var(--ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), "Helvetica Neue", sans-serif;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 /*
-  Film grain. Fixed and pointer-events-none so it never repaints with content —
-  attaching this to a scrolling container is what makes grain expensive.
+  A warm grain, kept very low. Fixed and pointer-events-none so it never
+  repaints with content — grain on a scrolling container is what makes it
+  expensive.
 */
 .grain::after {
   content: "";
@@ -107,56 +125,58 @@ body {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.022;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Small-caps label used for every field name in the rail. */
+/* Editorial serif for the one thing the page is about. */
+.editorial {
+  font-family: var(--font-display), "Newsreader", Georgia, serif;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.028em;
+}
+
+/* Field names, throughout. */
 .label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
 
-/*
-  Pressables. 160ms is the band where a press reads as acknowledged rather than
-  animated; scale stays subtle so text does not visibly soften.
-*/
 .pressable {
   transition:
-    transform 160ms var(--ease-out),
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms var(--ease-out);
+    transform 160ms var(--ease-press),
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .pressable:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .pressable:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 /* Hover only where there is a real pointer — touch fires hover on tap. */
 @media (hover: hover) and (pointer: fine) {
-  .lift-on-hover:hover {
-    transform: translateY(-1px);
+  .hover-lift:hover {
+    box-shadow: var(--hover-lift);
+    border-color: var(--line-strong);
   }
 }
 
-/*
-  Entry. Never from scale(0) — nothing in the world appears from nothing.
-  Transitions rather than keyframes so a rapid state change retargets instead
-  of restarting.
-*/
-@keyframes rise {
+/* Entry: gentle, never from scale(0). Staggered rather than all at once. */
+@keyframes enter {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -164,48 +184,38 @@ body {
   }
 }
 
-.rise {
-  animation: rise 420ms var(--ease-out) both;
+.enter {
+  animation: enter 600ms var(--ease-out) both;
+  animation-delay: calc(var(--index, 0) * 80ms);
 }
 
-.rise-1 { animation-delay: 40ms; }
-.rise-2 { animation-delay: 90ms; }
-.rise-3 { animation-delay: 140ms; }
-
 /*
-  Card swap (Blocked reveals the backup). A crossfade shows two objects at
-  once; a touch of blur bridges them into one transformation.
+  Card swap (Blocked reveals the backup). A plain crossfade shows two objects
+  at once; a touch of blur bridges them into one transformation.
 */
 .swapping {
   opacity: 0;
   filter: blur(3px);
-  transform: scale(0.99);
   transition:
-    opacity 140ms var(--ease-out),
-    filter 140ms var(--ease-out),
-    transform 140ms var(--ease-out);
+    opacity 140ms var(--ease-press),
+    filter 140ms var(--ease-press);
 }
 
 /* Reduced motion: keep the fades that explain a change, drop every movement. */
 @media (prefers-reduced-motion: reduce) {
-  .rise {
+  .enter {
     animation: none;
   }
-  .pressable,
-  .lift-on-hover:hover {
+  .pressable {
     transition-property: background-color, border-color;
-    transform: none;
   }
   .pressable:active {
     transform: none;
   }
-  .swapping {
-    transform: none;
-    filter: none;
+  .hover-lift:hover {
+    box-shadow: none;
   }
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
+  .swapping {
+    filter: none;
   }
 }

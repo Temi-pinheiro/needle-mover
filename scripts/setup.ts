@@ -1,0 +1,118 @@
+/**
+ * Seeds the two rows the app cannot create for itself.
+ *
+ * The Linear key is stored as AES-GCM ciphertext, so it cannot be pasted
+ * straight into Postgres — this encrypts it on the way in. Replaced by the
+ * settings page later; until then it is how you get running.
+ *
+ *   pnpm seed settings --email you@example.com --tz Africa/Lagos
+ *   pnpm seed workspace --name Meridian --key lin_api_xxx
+ *   pnpm seed show
+ */
+import { createClient } from "@supabase/supabase-js";
+import { encrypt } from "../src/lib/crypto";
+import { isValidTimezone } from "../src/lib/time";
+
+function arg(name: string): string | undefined {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? undefined : process.argv[i + 1];
+}
+
+function required(...names: string[]): void {
+  const missing = names.filter((n) => !process.env[n]);
+  if (missing.length) {
+    console.error(`Missing env: ${missing.join(", ")}. Copy .env.example to .env.local first.`);
+    process.exit(1);
+  }
+}
+
+function client() {
+  required("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
+}
+
+async function settings() {
+  const email = arg("email");
+  const timezone = arg("tz") ?? "UTC";
+  if (!email) {
+    console.error("Need --email. This is where the morning brief is sent.");
+    process.exit(1);
+  }
+  if (!isValidTimezone(timezone)) {
+    console.error(`"${timezone}" is not a valid IANA timezone, e.g. Africa/Lagos.`);
+    process.exit(1);
+  }
+
+  const row = {
+    singleton: true,
+    email,
+    timezone,
+    brief_time: arg("brief") ?? "07:00",
+    close_cutoff_time: arg("cutoff") ?? "19:00",
+    weekdays_only: arg("weekends") !== "true",
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await client().from("settings").upsert(row, { onConflict: "singleton" });
+  if (error) throw new Error(error.message);
+
+  console.log(`\nSettings saved.`);
+  console.log(`  brief   ${row.brief_time} ${row.timezone}${row.weekdays_only ? " (weekdays)" : " (every day)"}`);
+  console.log(`  cutoff  ${row.close_cutoff_time}`);
+  console.log(`  email   ${row.email}\n`);
+  console.log(`The timezone refreshes from your primary Google Calendar on every tick,`);
+  console.log(`so this value only matters until Calendar is connected.\n`);
+}
+
+async function workspace() {
+  required("ENCRYPTION_KEY");
+  const name = arg("name");
+  const key = arg("key") ?? process.env.LINEAR_API_KEY;
+
+  if (!name || !key) {
+    console.error("Need --name <venture> and --key <lin_api_...> (or LINEAR_API_KEY set).");
+    process.exit(1);
+  }
+
+  const { error } = await client()
+    .from("workspaces")
+    .insert({
+      venture_name: name,
+      api_key: encrypt(key),
+      is_private: arg("private") === "true",
+      active: true,
+    });
+  if (error) throw new Error(error.message);
+
+  console.log(`\nAdded "${name}". The key is encrypted at rest.`);
+  console.log(`Run pnpm linear:check to confirm it works before the first brief.\n`);
+}
+
+async function show() {
+  const db = client();
+  const [{ data: s }, { data: w }, { data: g }] = await Promise.all([
+    db.from("settings").select("email, brief_time, close_cutoff_time, timezone, weekdays_only").maybeSingle(),
+    db.from("workspaces").select("venture_name, active, is_private, last_synced_at"),
+    db.from("google_accounts").select("email, timezone").maybeSingle(),
+  ]);
+
+  console.log("\nSettings  ", s ?? "not set — run `pnpm seed settings`");
+  console.log("Calendar  ", g ?? "not connected — visit /api/google/start once signed in");
+  console.log("Ventures  ", w?.length ? w : "none — run `pnpm seed workspace`");
+  console.log();
+}
+
+const commands: Record<string, () => Promise<void>> = { settings, workspace, show };
+const command = commands[process.argv[2] ?? ""];
+
+if (!command) {
+  console.error("Usage: pnpm seed <settings|workspace|show> [flags]");
+  process.exit(1);
+}
+
+command().catch((err) => {
+  console.error(`\n${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
+});

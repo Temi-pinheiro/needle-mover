@@ -1,11 +1,12 @@
 /**
- * Hairline icons, inline. Stroke weight 1.25 at 16px — heavier strokes read as
- * decoration and fight the serif title for attention.
+ * Icon primitives. Stroke 1.75 — a technical, slightly thicker weight that
+ * holds its own against the hairline structure; thin strokes read as vague
+ * against a 1px border system.
  */
 const base = {
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 1.25,
+  strokeWidth: 1.75,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
@@ -35,10 +36,19 @@ export function Slash({ className = "" }: { className?: string }) {
   );
 }
 
-export function Chevron({ className = "" }: { className?: string }) {
+/** Sharp plus/minus for the drawer, per the accordion convention. */
+export function Toggle({ open, className = "" }: { open: boolean; className?: string }) {
   return (
-    <svg viewBox="0 0 16 16" width="12" height="12" className={className} aria-hidden {...base}>
-      <path d="m4 6 4 4 4-4" />
+    <svg viewBox="0 0 16 16" width="14" height="14" className={className} aria-hidden {...base}>
+      <path d="M3 8h10" />
+      <path
+        d="M8 3v10"
+        style={{
+          transformOrigin: "center",
+          transform: open ? "scaleY(0)" : "scaleY(1)",
+          transition: "transform 260ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+      />
     </svg>
   );
 }
