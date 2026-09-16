@@ -123,3 +123,42 @@ export const PROJECT_SCOPE = /* GraphQL */ `
     }
   }
 `;
+
+/** The workflow states available to an issue's team, for Start and Done. */
+export const ISSUE_TEAM_STATES = /* GraphQL */ `
+  query IssueTeamStates($issueId: String!) {
+    issue(id: $issueId) {
+      id
+      state {
+        id
+        type
+      }
+      team {
+        id
+        states(first: 100) {
+          nodes {
+            id
+            name
+            type
+            position
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const SET_ISSUE_STATE = /* GraphQL */ `
+  mutation SetIssueState($issueId: String!, $stateId: String!) {
+    issueUpdate(id: $issueId, input: { stateId: $stateId }) {
+      success
+      issue {
+        id
+        state {
+          name
+          type
+        }
+      }
+    }
+  }
+`;

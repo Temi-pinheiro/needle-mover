@@ -1,26 +1,211 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  Editorial Luxury: warm paper ground, a high-contrast serif carrying the task
+  title, Geist for everything functional. Chosen because this screen is opened
+  at 7am every day — it should read as calm and considered, not as a cockpit.
+*/
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Layered neutrals rather than white-on-grey. */
+  --ground: #faf7f1;
+  --ground-deep: #f2ede3;
+  --surface: #fffdf9;
+  --surface-sunken: #f6f2ea;
+
+  --ink: #1a1713;
+  --ink-soft: #4a443b;
+  --ink-muted: #837b6d;
+  --ink-faint: #a9a094;
+
+  /* One accent, used only for the live task and its primary action. */
+  --accent: #2f5d50;
+  --accent-soft: #e4ece8;
+  --accent-ink: #f7fbf9;
+
+  --warn: #8a5a2b;
+  --warn-soft: #f6eddf;
+
+  --hairline: rgb(26 23 19 / 0.08);
+  --hairline-strong: rgb(26 23 19 / 0.14);
+
+  /* Diffused ambient depth — never a hard drop shadow. */
+  --lift: 0 1px 2px rgb(26 23 19 / 0.04), 0 8px 24px -12px rgb(26 23 19 / 0.14),
+    0 32px 64px -32px rgb(26 23 19 / 0.12);
+  --inner-light: inset 0 1px 0 rgb(255 255 255 / 0.9);
+
+  /* Built-in easings are too weak to read as intentional. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ground: #14120e;
+    --ground-deep: #0e0c09;
+    --surface: #1d1a15;
+    --surface-sunken: #171410;
+
+    --ink: #f4efe5;
+    --ink-soft: #d3cbbd;
+    --ink-muted: #9b9284;
+    --ink-faint: #6d6558;
+
+    --accent: #7fb3a1;
+    --accent-soft: #1f2e29;
+    --accent-ink: #0e1614;
+
+    --warn: #d09a5e;
+    --warn-soft: #2a2117;
+
+    --hairline: rgb(244 239 229 / 0.1);
+    --hairline-strong: rgb(244 239 229 / 0.18);
+
+    --lift: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6),
+      0 32px 64px -32px rgb(0 0 0 / 0.7);
+    --inner-light: inset 0 1px 0 rgb(255 255 255 / 0.06);
   }
 }
 
+@theme inline {
+  --color-ground: var(--ground);
+  --color-ground-deep: var(--ground-deep);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Film grain. Fixed and pointer-events-none so it never repaints with content —
+  attaching this to a scrolling container is what makes grain expensive.
+*/
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Small-caps label used for every field name in the rail. */
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/*
+  Pressables. 160ms is the band where a press reads as acknowledged rather than
+  animated; scale stays subtle so text does not visibly soften.
+*/
+.pressable {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms var(--ease-out);
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+.pressable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Hover only where there is a real pointer — touch fires hover on tap. */
+@media (hover: hover) and (pointer: fine) {
+  .lift-on-hover:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/*
+  Entry. Never from scale(0) — nothing in the world appears from nothing.
+  Transitions rather than keyframes so a rapid state change retargets instead
+  of restarting.
+*/
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 420ms var(--ease-out) both;
+}
+
+.rise-1 { animation-delay: 40ms; }
+.rise-2 { animation-delay: 90ms; }
+.rise-3 { animation-delay: 140ms; }
+
+/*
+  Card swap (Blocked reveals the backup). A crossfade shows two objects at
+  once; a touch of blur bridges them into one transformation.
+*/
+.swapping {
+  opacity: 0;
+  filter: blur(3px);
+  transform: scale(0.99);
+  transition:
+    opacity 140ms var(--ease-out),
+    filter 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+
+/* Reduced motion: keep the fades that explain a change, drop every movement. */
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  .pressable,
+  .lift-on-hover:hover {
+    transition-property: background-color, border-color;
+    transform: none;
+  }
+  .pressable:active {
+    transform: none;
+  }
+  .swapping {
+    transform: none;
+    filter: none;
+  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
 }

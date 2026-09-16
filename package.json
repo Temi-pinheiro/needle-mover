@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "linear:check": "tsx scripts/linear-check.ts",
+    "linear:check": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/linear-check.ts",
     "keygen": "tsx scripts/keygen.ts",
     "db:types": "supabase gen types typescript --linked > src/lib/db/generated.ts"
   },

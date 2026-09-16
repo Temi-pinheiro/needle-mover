@@ -17,12 +17,6 @@ import {
 import { deriveRelations, sumScope } from '../src/lib/linear/map';
 
 const key = process.env.LINEAR_API_KEY;
-const keys = {
-  tick: process.env.ENCRYPTION_KEY,
-  enc: process.env.TICK_SECRET,
-  lin: process.env.LINEAR_API_KEY,
-};
-console.log(keys);
 if (!key) {
   console.error(
     'Set LINEAR_API_KEY first. Linear → Settings → Security & access → Personal API keys.',
