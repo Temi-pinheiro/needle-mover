@@ -101,7 +101,7 @@ export function RecapEmail(props: RecapEmailProps) {
           ) : (
             movements.map((m) => (
               <Text key={m.name} style={item}>
-                {m.name} — {Math.round(m.before * 100)}% → <strong>{Math.round(m.after * 100)}%</strong>
+                {m.name}, {Math.round(m.before * 100)}% → <strong>{Math.round(m.after * 100)}%</strong>
                 {m.targetDate ? ` (target ${m.targetDate})` : ""}
               </Text>
             ))

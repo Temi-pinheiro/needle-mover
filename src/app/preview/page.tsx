@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { NowView, type NowViewProps } from "@/components/NowView";
+import { DayClosed } from "@/components/DayClosed";
+import type { ClosedIssue } from "@/lib/recap";
 
 /**
  * Renders the Now view against fabricated data so the design can be judged
@@ -21,6 +23,10 @@ async function Preview({
 }) {
   const params = await searchParams;
   const variant = typeof params.v === "string" ? params.v : "default";
+
+  if (variant === "closed" || variant === "closed-quiet") {
+    return <ClosedPreview quiet={variant === "closed-quiet"} />;
+  }
 
   const base: NowViewProps = {
     dayId: "preview",
@@ -75,4 +81,83 @@ async function Preview({
   };
 
   return <NowView {...base} {...variants[variant]} />;
+}
+
+
+/** The closed day, at the volume that made the flat list unreadable. */
+function ClosedPreview({ quiet }: { quiet: boolean }) {
+  const make = (project: string, venture: string, prefix: string, titles: string[]): ClosedIssue[] =>
+    titles.map((title, i) => ({
+      identifier: `${prefix}-${100 + i}`,
+      title,
+      url: "#",
+      ventureName: venture,
+      projectName: project,
+    }));
+
+  const closed: ClosedIssue[] = quiet
+    ? make("Guest links", "Northbound", "TEM", ["Collaborator link projection", "Revocation and expiry"])
+    : [
+        ...make("Needle Mover", "Northbound", "TEM", [
+          "Qualify issue identifiers when two ventures produce the same one",
+          "A venture is a Linear team, not a Linear organisation",
+          "Operational scripts: migrations, env:check, seed, scope",
+          "Linear webhooks with signed, replay-protected deliveries",
+          "Close day and the recap",
+          "Midday nudge over web push",
+          "Settings page",
+          "Auth, Supabase Google sign-in restricted to one address",
+        ]),
+        ...make("Guest links", "Northbound", "TEM", [
+          "Collaborator link, one per venture",
+          "Personal link for friends and family",
+          "Private venture override",
+        ]),
+        ...make("Sales funnel", "Halyard", "BUI", [
+          "Walk the client through the funnel",
+          "Finish the discovery deck",
+          "Send the revised statement of work",
+          "Confirm October workshop dates",
+          "Draft the Q4 partner update",
+        ]),
+        ...make("Bord", "Halyard", "BUI", ["Pricing page copy", "Onboarding email sequence"]),
+      ];
+
+  return (
+    <DayClosed
+      date="2026-09-17"
+      summary={
+        quiet
+          ? "A thin day. The needle mover did not move and two small guest-link tasks closed against a target that is still three weeks out."
+          : "Eighteen issues closed across both ventures, most of them the Needle Mover build itself. The Halyard discovery deck finally shipped, which unblocks the funnel walkthrough that has been waiting on it since Monday."
+      }
+      closed={closed}
+      movements={
+        quiet
+          ? []
+          : [
+              {
+                name: "Needle Mover",
+                ventureName: "Northbound",
+                targetDate: "2026-10-01",
+                before: 0.31,
+                after: 0.58,
+              },
+              {
+                name: "Sales funnel",
+                ventureName: "Halyard",
+                targetDate: "2026-09-30",
+                before: 0.4,
+                after: 0.52,
+              },
+            ]
+      }
+      tomorrow={{
+        identifier: "BUI-127",
+        title: "Work on the sales funnel and walk the client through it",
+        ventureName: "Halyard",
+      }}
+      tomorrowNote="The deck is done, so the walkthrough is the next thing standing between this and a signed scope."
+    />
+  );
 }

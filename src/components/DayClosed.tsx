@@ -1,9 +1,18 @@
 import type { ClosedIssue, ProjectMovement } from "@/lib/recap";
+import { HeaderNav } from "./HeaderNav";
+import { ClosedList } from "./ClosedList";
 
 /**
- * The day after it has been closed. Shows the same facts the email carries —
- * the narrative is read from the day row rather than regenerated, so the two
- * can never disagree.
+ * The day after it has been closed.
+ *
+ * Reads the narrative from the day row rather than regenerating it, so this
+ * page and the recap email can never disagree.
+ *
+ * Structure follows what you actually want to know, in order: what the day
+ * amounted to, the two numbers that summarise it, then the detail. The
+ * previous version led with a 36-row list and left half the width empty when
+ * nothing had moved, which buried the summary and told you nothing at a
+ * glance.
  */
 export function DayClosed({
   date,
@@ -20,85 +29,109 @@ export function DayClosed({
   tomorrow: { identifier: string; title: string; ventureName: string } | null;
   tomorrowNote: string | null;
 }) {
-  const byVenture = closed.reduce<Record<string, ClosedIssue[]>>((acc, issue) => {
-    (acc[issue.ventureName] ??= []).push(issue);
-    return acc;
-  }, {});
+  const projects = new Set(closed.map((c) => `${c.ventureName}/${c.projectName ?? "none"}`)).size;
 
   return (
-    <main className="relative z-0 mx-auto w-full max-w-3xl px-5 py-16 sm:px-8 md:py-24">
-      <header
-        className="enter mb-12 flex items-baseline justify-between border-b border-line pb-5"
-        style={{ "--index": 0 } as React.CSSProperties}
-      >
-        <p className="label">Day closed</p>
-        <p className="font-mono text-[11px] text-ink-faint">{date}</p>
-      </header>
+    <main className="relative z-0 mx-auto w-full max-w-3xl px-5 pb-24 pt-16 sm:px-8">
+      <HeaderNav eyebrow="Day closed" date={date} />
 
-      <section
-        className="enter rounded-xl border border-line bg-surface px-7 py-9 sm:px-10"
-        style={{ "--index": 1 } as React.CSSProperties}
-      >
-        {summary && <p className="editorial text-[1.75rem] text-ink sm:text-[2rem]">{summary}</p>}
+      {summary && (
+        <p
+          className="enter max-w-[46ch] text-[1.6rem] leading-[1.35] tracking-[-0.015em] text-ink sm:text-[1.9rem]"
+          style={{ "--index": 1 } as React.CSSProperties}
+        >
+          {summary}
+        </p>
+      )}
 
-        <div className="mt-10 grid gap-10 sm:grid-cols-2">
-          <div>
-            <p className="label mb-4">Closed today · {closed.length}</p>
-            {closed.length === 0 ? (
-              <p className="text-[14px] text-ink-muted">Nothing.</p>
-            ) : (
-              Object.entries(byVenture).map(([venture, issues]) => (
-                <div key={venture} className="mb-5">
-                  <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-faint">
-                    {venture}
+      {/* Two figures given real weight, so the shape of the day reads at a glance. */}
+      <div
+        className="enter mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3"
+        style={{ "--index": 2 } as React.CSSProperties}
+      >
+        <Figure value={closed.length} label={closed.length === 1 ? "issue closed" : "issues closed"} />
+        <Figure value={projects} label={projects === 1 ? "project touched" : "projects touched"} />
+        <Figure
+          value={movements.length}
+          label={movements.length === 1 ? "target moved" : "targets moved"}
+          muted={movements.length === 0}
+        />
+      </div>
+
+      {movements.length > 0 && (
+        <Block index={3} title="Targets moved">
+          <ul className="divide-y divide-line border-t border-line">
+            {movements.map((m) => (
+              <li key={m.name} className="flex flex-wrap items-baseline justify-between gap-3 py-4">
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] text-ink">{m.name}</p>
+                  <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint">
+                    {m.ventureName}
+                    {m.targetDate ? ` · due ${m.targetDate}` : ""}
                   </p>
-                  <ul className="space-y-1.5">
-                    {issues.map((issue) => (
-                      <li key={issue.identifier} className="text-[14px] leading-snug text-ink-soft">
-                        {issue.title}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
-              ))
-            )}
-          </div>
+                <p className="shrink-0 font-mono text-[13px] tabular-nums text-ink-muted">
+                  {Math.round(m.before * 100)}
+                  <span className="mx-1.5 text-ink-faint">to</span>
+                  <span className="text-pale-green-ink">{Math.round(m.after * 100)}%</span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      )}
 
-          <div>
-            <p className="label mb-4">Targets moved</p>
-            {movements.length === 0 ? (
-              <p className="text-[14px] text-ink-muted">None moved today.</p>
-            ) : (
-              <ul className="space-y-4">
-                {movements.map((m) => (
-                  <li key={m.name}>
-                    <p className="text-[14px] leading-snug text-ink">{m.name}</p>
-                    <p className="mt-1 font-mono text-[11px] text-ink-faint">
-                      {Math.round(m.before * 100)}% → {Math.round(m.after * 100)}%
-                      {m.targetDate ? ` · target ${m.targetDate}` : ""}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+      <Block index={4} title="Closed today">
+        <ClosedList issues={closed} />
+      </Block>
 
-        {tomorrow && (
-          <div className="mt-10 border-t border-line pt-7">
-            <p className="label mb-3">Tomorrow</p>
-            <p className="text-[15px] leading-snug text-ink">{tomorrow.title}</p>
-            <p className="mt-1 font-mono text-[11px] text-ink-faint">
+      {tomorrow && (
+        <Block index={5} title="Tomorrow">
+          <div className="border-t border-line pt-5">
+            <p className="text-[1.15rem] leading-snug text-ink">{tomorrow.title}</p>
+            <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-faint">
               {tomorrow.ventureName} · {tomorrow.identifier}
             </p>
             {tomorrowNote && (
-              <p className="mt-3 max-w-[60ch] text-[13.5px] leading-relaxed text-ink-muted">
+              <p className="mt-4 max-w-[58ch] text-[14px] leading-relaxed text-ink-muted">
                 {tomorrowNote}
               </p>
             )}
           </div>
-        )}
-      </section>
+        </Block>
+      )}
     </main>
+  );
+}
+
+function Figure({ value, label, muted }: { value: number; label: string; muted?: boolean }) {
+  return (
+    <div className="bg-surface px-5 py-6">
+      <p
+        className={`font-mono text-[2rem] leading-none tabular-nums ${
+          muted ? "text-ink-faint" : "text-ink"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-2.5 text-[12px] leading-snug text-ink-muted">{label}</p>
+    </div>
+  );
+}
+
+function Block({
+  index,
+  title,
+  children,
+}: {
+  index: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="enter mt-14" style={{ "--index": index } as React.CSSProperties}>
+      <h2 className="mb-5 text-[15px] font-medium text-ink">{title}</h2>
+      {children}
+    </section>
   );
 }

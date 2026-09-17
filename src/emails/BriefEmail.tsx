@@ -83,7 +83,7 @@ export function BriefEmail(props: BriefEmailProps) {
               <Text style={paragraph}>{focusWindow}</Text>
             </>
           ) : (
-            <Text style={paragraph}>No free block long enough today — steal the first gap you get.</Text>
+            <Text style={paragraph}>No free block long enough today. Steal the first gap you get.</Text>
           )}
 
           {needsSplit ? (

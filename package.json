@@ -16,10 +16,12 @@
     "brief:preview": "tsx --env-file-if-exists=.env.local scripts/brief-preview.ts",
     "migrations": "tsx --env-file-if-exists=.env.local scripts/migration-status.ts",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/env-check.ts",
-    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts"
+    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts",
+    "recap:resend": "tsx --env-file-if-exists=.env.local scripts/recap-resend.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
