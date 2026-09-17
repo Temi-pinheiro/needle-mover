@@ -14,6 +14,7 @@
 import { createLinearClient, LinearError } from "../src/lib/linear/client";
 import {
   ACTIVE_PROJECTS,
+  COMPLETED_SINCE,
   OPEN_ISSUES,
   PROJECT_SCOPE,
   TEAM_ESTIMATION,
@@ -93,6 +94,17 @@ async function main() {
       );
       return data;
     });
+  }
+
+  if (viewer) {
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const closed = await step("issues completed in the last 7 days (recap source)", () =>
+      client.request<{ issues: { nodes: Array<{ identifier: string; completedAt: string }> } }>(
+        COMPLETED_SINCE,
+        { assigneeId: viewer.viewer.id, since, after: null },
+      ),
+    );
+    if (closed) console.log(`       ${closed.issues.nodes.length} closed in the last week`);
   }
 
   const teams = await step("team estimation settings", () =>

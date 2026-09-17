@@ -182,3 +182,38 @@ export const TEAM_ESTIMATION = /* GraphQL */ `
     }
   }
 `;
+
+/**
+ * Issues completed since an instant.
+ *
+ * The recap cannot read this from our cache: sync deletes issues that have
+ * left the open set, which is exactly the set the recap is about. It also has
+ * to include issues closed directly in Linear, not only those closed through
+ * the app.
+ */
+export const COMPLETED_SINCE = /* GraphQL */ `
+  query CompletedSince($assigneeId: ID!, $since: DateTimeOrDuration!, $after: String) {
+    issues(
+      first: 100
+      after: $after
+      filter: { assignee: { id: { eq: $assigneeId } }, completedAt: { gte: $since } }
+    ) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        identifier
+        title
+        url
+        completedAt
+        estimate
+        project {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
