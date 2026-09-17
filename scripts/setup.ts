@@ -105,10 +105,9 @@ async function workspace() {
 async function show() {
   const db = client();
   const [settingsRes, workspacesRes, googleRes] = await Promise.all([
-    db
-      .from("settings")
-      .select("email, brief_time, close_cutoff_time, timezone, weekdays_only, paused_until")
-      .maybeSingle(),
+    // select("*") rather than named columns: a column that has not been
+    // migrated yet should not make the whole status read fail.
+    db.from("settings").select("*").maybeSingle(),
     db.from("workspaces").select("venture_name, active, is_private, last_synced_at"),
     db.from("google_accounts").select("email, timezone").maybeSingle(),
   ]);
