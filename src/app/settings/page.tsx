@@ -10,6 +10,7 @@ import {
   Toggle,
 } from "@/components/SettingsClient";
 import { PushToggle } from "@/components/PushToggle";
+import { WebhookDetails } from "@/components/WebhookDetails";
 import { addWorkspace, saveSchedule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
   const settings = settingsRes.data as Settings | null;
   const workspaces = (workspacesRes.data ?? []) as Workspace[];
   const google = googleRes.data as GoogleAccount | null;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
@@ -165,9 +167,29 @@ export default async function SettingsPage() {
           </ActionForm>
         </Section>
 
+        {/* -------------------------------------------------------- webhooks -- */}
+        {workspaces.length > 0 && (
+          <Section
+            index={4}
+            title="Webhooks"
+            note="Optional. The 15-minute sync already keeps things fresh; a webhook makes the Now view correct within seconds of a change in Linear. In Linear: Settings → API → Webhooks → New webhook, subscribe to Issues, and paste these. Needs a deployed URL — Linear cannot reach localhost."
+          >
+            <div className="divide-y divide-line border-y border-line">
+              {workspaces.map((w) => (
+                <WebhookDetails
+                  key={w.id}
+                  ventureName={w.venture_name}
+                  url={`${appUrl}/api/webhooks/linear/${w.id}`}
+                  secret={w.webhook_secret}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
         {/* ---------------------------------------------------- midday nudge -- */}
         <Section
-          index={4}
+          index={5}
           title="Midday nudge"
           note="A browser notification, per browser. Granting it here covers this machine only — enable it again on any other laptop you use."
         >
@@ -175,7 +197,7 @@ export default async function SettingsPage() {
         </Section>
 
         {/* -------------------------------------------------------- account -- */}
-        <Section index={5} title="Account">
+        <Section index={6} title="Account">
           <form action="/auth/signout" method="post">
             <button className="pressable rounded-md border border-line px-4 py-2 text-[13px] text-ink-muted transition-colors hover:text-ink">
               Sign out
