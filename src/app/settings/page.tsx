@@ -9,6 +9,7 @@ import {
   RemoveWorkspace,
   Toggle,
 } from "@/components/SettingsClient";
+import { PushToggle } from "@/components/PushToggle";
 import { addWorkspace, saveSchedule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -164,8 +165,17 @@ export default async function SettingsPage() {
           </ActionForm>
         </Section>
 
+        {/* ---------------------------------------------------- midday nudge -- */}
+        <Section
+          index={4}
+          title="Midday nudge"
+          note="A browser notification, per browser. Granting it here covers this machine only — enable it again on any other laptop you use."
+        >
+          <PushToggle vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
+        </Section>
+
         {/* -------------------------------------------------------- account -- */}
-        <Section index={4} title="Account">
+        <Section index={5} title="Account">
           <form action="/auth/signout" method="post">
             <button className="pressable rounded-md border border-line px-4 py-2 text-[13px] text-ink-muted transition-colors hover:text-ink">
               Sign out

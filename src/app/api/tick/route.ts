@@ -1,6 +1,6 @@
 import { db, unwrap } from "@/lib/db/client";
 import { decrypt, safeEqual } from "@/lib/crypto";
-import type { Day, Issue, Project, Settings, Workspace } from "@/lib/db/types";
+import type { Day, DayEvent, Issue, Project, Settings, Workspace } from "@/lib/db/types";
 import {
   carryOverMap,
   getGoogleAccount,
@@ -10,7 +10,9 @@ import {
 } from "@/lib/day";
 import { primaryCalendar } from "@/lib/google/client";
 import { syncAll } from "@/lib/linear/sync";
-import { sendBrief } from "@/lib/email/send";
+import { sendBrief, sendCloseReminder } from "@/lib/email/send";
+import { middayTime, pushToAll } from "@/lib/push";
+import { nowState } from "@/lib/day-state";
 import { needsSplitPrompt } from "@/lib/scoring/score";
 import { hasPassed, isValidTimezone, isWeekend, localDate, localTime } from "@/lib/time";
 
@@ -184,6 +186,132 @@ async function briefProps(day: Day, settings: Settings) {
   };
 }
 
+/**
+ * One browser notification, halfway between the brief and the cutoff.
+ *
+ * Skipped once the task is done — the spec is explicit that a nudge about
+ * finished work is worse than no nudge. Also skipped after the cutoff, so a
+ * tick that runs late does not fire a "still on it?" at nine in the evening.
+ */
+async function runNudgeStep(
+  day: Day,
+  settings: Settings,
+  now: Date,
+  log: string[],
+): Promise<void> {
+  if (day.nudge_sent_at) {
+    log.push("nudge: already sent");
+    return;
+  }
+  if (!day.needle_mover_id || day.status === "closed") {
+    log.push("nudge: nothing in progress");
+    return;
+  }
+
+  const midday = middayTime(settings.brief_time, settings.close_cutoff_time);
+  if (!hasPassed(now, midday, settings.timezone)) {
+    log.push(`nudge: not yet (${localTime(now, settings.timezone)} < ${midday})`);
+    return;
+  }
+  if (hasPassed(now, settings.close_cutoff_time.slice(0, 5), settings.timezone)) {
+    log.push("nudge: past the cutoff, skipped");
+    return;
+  }
+
+  const events = ((await db().from("day_events").select("*").eq("day_id", day.id)).data ??
+    []) as DayEvent[];
+  const state = nowState(day, events);
+  if (state.done) {
+    log.push("nudge: task already done");
+    return;
+  }
+
+  if (!(await claim(day.id, "nudge_sent_at"))) {
+    log.push("nudge: claimed by another tick");
+    return;
+  }
+
+  try {
+    const { data } = await db()
+      .from("issues")
+      .select("title")
+      .eq("id", state.activeIssueId ?? day.needle_mover_id)
+      .maybeSingle();
+    const title = (data as { title: string } | null)?.title ?? "your needle mover";
+
+    const result = await pushToAll({
+      title: "Still on it?",
+      body: title,
+      url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    });
+
+    if (result.sent === 0) {
+      // Nothing was delivered, so nothing was nudged. Release the claim rather
+      // than recording a nudge that never happened.
+      await release(day.id, "nudge_sent_at");
+      log.push(
+        `nudge: no subscriptions${result.removed ? `, ${result.removed} expired and removed` : ""}`,
+      );
+      return;
+    }
+
+    log.push(
+      `nudge: sent to ${result.sent}${result.removed ? `, ${result.removed} expired` : ""}${
+        result.failed ? `, ${result.failed} failed` : ""
+      }`,
+    );
+  } catch (err) {
+    await release(day.id, "nudge_sent_at");
+    throw err;
+  }
+}
+
+/**
+ * One nudge after the cutoff if the day is still open. Skipped entirely when
+ * there was no needle mover to begin with — there is nothing to close.
+ */
+async function runCloseReminderStep(
+  day: Day,
+  settings: Settings,
+  now: Date,
+  log: string[],
+): Promise<void> {
+  if (day.reminder_sent_at) {
+    log.push("reminder: already sent");
+    return;
+  }
+  if (day.status === "closed") {
+    log.push("reminder: day already closed");
+    return;
+  }
+  if (!day.needle_mover_id) {
+    log.push("reminder: nothing was picked today");
+    return;
+  }
+
+  const cutoff = settings.close_cutoff_time.slice(0, 5);
+  if (!hasPassed(now, cutoff, settings.timezone)) {
+    log.push(`reminder: not yet (${localTime(now, settings.timezone)} < ${cutoff})`);
+    return;
+  }
+
+  if (!(await claim(day.id, "reminder_sent_at"))) {
+    log.push("reminder: claimed by another tick");
+    return;
+  }
+
+  try {
+    await sendCloseReminder(
+      settings.email,
+      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    );
+    log.push("reminder: sent");
+  } catch (err) {
+    await release(day.id, "reminder_sent_at");
+    throw err;
+  }
+}
+
 export async function POST(request: Request) {
   const secret = process.env.TICK_SECRET;
   const presented =
@@ -210,10 +338,11 @@ export async function POST(request: Request) {
     await runSyncStep(log);
     await runBriefStep(day, current, now, log);
 
-    // Phase 2 adds the midday nudge and the close-day reminder here. Both
-    // follow the same claim/release shape as the brief; neither is stubbed,
-    // because a step that silently does nothing is worse than one that is
-    // visibly absent.
+    // Re-read: the brief step may have just planned the day, and the reminder
+    // needs to see that rather than the row as it was before.
+    const after = await materializeDay(today, timezone);
+    await runNudgeStep(after, current, now, log);
+    await runCloseReminderStep(after, current, now, log);
 
     return Response.json({ ok: true, at: now.toISOString(), timezone, date: today, log });
   } catch (err) {
