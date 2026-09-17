@@ -43,3 +43,6 @@ next-env.d.ts
 # local env
 .env.local
 .env
+
+# overnight working notes, not part of the repo
+recap.md
