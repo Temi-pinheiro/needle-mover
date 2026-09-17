@@ -12,7 +12,8 @@
     "linear:check": "tsx --env-file-if-exists=.env.local scripts/linear-check.ts",
     "keygen": "tsx scripts/keygen.ts",
     "db:types": "supabase gen types typescript --linked > src/lib/db/generated.ts",
-    "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts"
+    "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
+    "brief:preview": "tsx --env-file-if-exists=.env.local scripts/brief-preview.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
