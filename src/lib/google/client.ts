@@ -35,12 +35,16 @@ export function oauthClient(): OAuth2Client {
  * token comes back. Without the forced prompt, Google omits it on every
  * consent after the first, which is the exact failure we moved off Supabase
  * Auth to avoid.
+ *
+ * `state` is echoed back to the callback and checked against a cookie, so a
+ * callback we did not initiate is rejected.
  */
-export function consentUrl(): string {
+export function consentUrl(state: string): string {
   return oauthClient().generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: [CALENDAR_SCOPE],
+    state,
   });
 }
 
@@ -79,13 +83,27 @@ async function call<T>(refreshToken: string, path: string, init?: RequestInit): 
 }
 
 /**
- * The timezone of the primary calendar. This is the single source of truth for
- * where TP is, refreshed on each tick, so travel needs no settings change.
+ * The primary calendar's identity and timezone.
+ *
+ * Its `id` is the account's own email address, which is how we learn which
+ * Google account granted access without asking for any profile scope beyond
+ * the calendar one.
+ *
+ * The timezone here is the single source of truth for where TP is, refreshed
+ * on each tick, so travel needs no settings change.
  */
+export async function primaryCalendar(
+  refreshToken: string,
+): Promise<{ email: string; timezone: string | null }> {
+  const data = await call<{ id?: string; timeZone?: string }>(refreshToken, "/calendars/primary");
+  return {
+    email: data.id ?? "",
+    timezone: data.timeZone && isValidTimezone(data.timeZone) ? data.timeZone : null,
+  };
+}
+
 export async function primaryTimezone(refreshToken: string): Promise<string | null> {
-  const data = await call<{ timeZone?: string }>(refreshToken, "/calendars/primary");
-  if (!data.timeZone || !isValidTimezone(data.timeZone)) return null;
-  return data.timeZone;
+  return (await primaryCalendar(refreshToken)).timezone;
 }
 
 /** Busy intervals across the primary calendar between two instants. */

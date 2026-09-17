@@ -8,7 +8,7 @@ import {
   materializeDay,
   planDay,
 } from "@/lib/day";
-import { primaryTimezone } from "@/lib/google/client";
+import { primaryCalendar } from "@/lib/google/client";
 import { syncAll } from "@/lib/linear/sync";
 import { sendBrief } from "@/lib/email/send";
 import { needsSplitPrompt } from "@/lib/scoring/score";
@@ -53,7 +53,7 @@ async function refreshTimezone(settings: Settings): Promise<string> {
   if (!google) return settings.timezone;
 
   try {
-    const tz = await primaryTimezone(decrypt(google.refresh_token));
+    const { timezone: tz } = await primaryCalendar(decrypt(google.refresh_token));
     if (!tz || !isValidTimezone(tz) || tz === settings.timezone) return settings.timezone;
 
     await Promise.all([
