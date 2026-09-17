@@ -13,7 +13,8 @@
     "keygen": "tsx scripts/keygen.ts",
     "db:types": "supabase gen types typescript --linked > src/lib/db/generated.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
-    "brief:preview": "tsx --env-file-if-exists=.env.local scripts/brief-preview.ts"
+    "brief:preview": "tsx --env-file-if-exists=.env.local scripts/brief-preview.ts",
+    "migrations": "tsx --env-file-if-exists=.env.local scripts/migration-status.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
