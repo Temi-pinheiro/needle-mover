@@ -12,7 +12,13 @@
  *   pnpm linear:check
  */
 import { createLinearClient, LinearError } from "../src/lib/linear/client";
-import { ACTIVE_PROJECTS, OPEN_ISSUES, PROJECT_SCOPE, VIEWER } from "../src/lib/linear/queries";
+import {
+  ACTIVE_PROJECTS,
+  OPEN_ISSUES,
+  PROJECT_SCOPE,
+  TEAM_ESTIMATION,
+  VIEWER,
+} from "../src/lib/linear/queries";
 import {
   deriveRelations,
   sumScope,
@@ -87,6 +93,23 @@ async function main() {
       );
       return data;
     });
+  }
+
+  const teams = await step("team estimation settings", () =>
+    client.request<{
+      teams: {
+        nodes: Array<{ key: string; name: string; issueEstimationType: string }>;
+      };
+    }>(TEAM_ESTIMATION),
+  );
+
+  if (teams) {
+    for (const t of teams.teams.nodes) {
+      const scale = t.issueEstimationType;
+      console.log(
+        `       ${t.key.padEnd(6)} ${t.name.padEnd(24)} ${scale === "notUsed" ? "estimates OFF" : scale}`,
+      );
+    }
   }
 
   if (issues && projects && viewer) {

@@ -162,3 +162,23 @@ export const SET_ISSUE_STATE = /* GraphQL */ `
     }
   }
 `;
+
+
+/**
+ * Per-team estimation settings. Estimates are a team-level feature in Linear:
+ * if a team has them switched off, every one of its issues returns a null
+ * estimate and both scope share and calendar fit fall back to neutral.
+ */
+export const TEAM_ESTIMATION = /* GraphQL */ `
+  query TeamEstimation {
+    teams(first: 50) {
+      nodes {
+        id
+        key
+        name
+        issueEstimationType
+        issueEstimationAllowZero
+      }
+    }
+  }
+`;
