@@ -34,8 +34,12 @@ function client() {
 }
 
 async function settings() {
-  const email = arg("email");
-  const timezone = arg("tz") ?? "UTC";
+  const db = client();
+  const { data: current } = await db.from("settings").select("*").maybeSingle();
+
+  const email = arg("email") ?? current?.email;
+  const timezone = arg("tz") ?? current?.timezone ?? "UTC";
+
   if (!email) {
     console.error("Need --email. This is where the morning brief is sent.");
     process.exit(1);
@@ -45,20 +49,23 @@ async function settings() {
     process.exit(1);
   }
 
+  // Merge over whatever is already stored: changing one field must not silently
+  // reset the others to their defaults.
   const row = {
     singleton: true,
     email,
     timezone,
-    brief_time: arg("brief") ?? "07:00",
-    close_cutoff_time: arg("cutoff") ?? "19:00",
-    weekdays_only: arg("weekends") !== "true",
+    brief_time: arg("brief") ?? current?.brief_time ?? "07:00",
+    close_cutoff_time: arg("cutoff") ?? current?.close_cutoff_time ?? "19:00",
+    weekdays_only:
+      arg("weekends") !== undefined ? arg("weekends") !== "true" : (current?.weekdays_only ?? true),
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await client().from("settings").upsert(row, { onConflict: "singleton" });
+  const { error } = await db.from("settings").upsert(row, { onConflict: "singleton" });
   if (error) throw new Error(error.message);
 
-  console.log(`\nSettings saved.`);
+  console.log(`\n${current ? "Settings updated" : "Settings saved"}.`);
   console.log(`  brief   ${row.brief_time} ${row.timezone}${row.weekdays_only ? " (weekdays)" : " (every day)"}`);
   console.log(`  cutoff  ${row.close_cutoff_time}`);
   console.log(`  email   ${row.email}\n`);
