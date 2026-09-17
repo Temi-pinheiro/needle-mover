@@ -11,6 +11,7 @@ import {
 } from "@/components/SettingsClient";
 import { PushToggle } from "@/components/PushToggle";
 import { WebhookDetails } from "@/components/WebhookDetails";
+import { TeamScope } from "@/components/TeamScope";
 import { addWorkspace, saveSchedule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -119,7 +120,7 @@ export default async function SettingsPage() {
         <Section
           index={3}
           title="Ventures"
-          note="One Linear workspace each. Keys are verified against Linear before they are stored, then encrypted."
+          note="One Linear team each, or a whole organisation. Two ventures sharing an organisation must each be scoped to their own team, or they compete for the same issues and one ends up showing nothing."
         >
           {workspaces.length > 0 && (
             <ul className="mb-8 divide-y divide-line border-y border-line">
@@ -134,6 +135,7 @@ export default async function SettingsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-5">
+                    <TeamScope workspaceId={w.id} teamKey={w.linear_team_key} />
                     <InstantToggle label="Active" workspaceId={w.id} field="active" checked={w.active} />
                     <InstantToggle
                       label="Private"

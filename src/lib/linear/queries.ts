@@ -1,12 +1,15 @@
 /**
  * Linear GraphQL documents.
  *
- * Two deliberate choices:
+ * Three deliberate choices:
  *  - We resolve `viewer.id` first and filter on it, rather than an `isMe`
  *    comparator that isn't in the public filtering docs.
  *  - `relations` and `inverseRelations` use *different* field names for the
  *    other side of the relation (`relatedIssue` vs `issue`), because the issue
  *    is the source in one and the target in the other.
+ *  - Filters are passed as variables rather than written inline, so a venture
+ *    scoped to one team and a venture spanning a whole organisation share one
+ *    document instead of two that can drift apart.
  */
 
 export const VIEWER = /* GraphQL */ `
@@ -24,16 +27,22 @@ export const VIEWER = /* GraphQL */ `
   }
 `;
 
-export const OPEN_ISSUES = /* GraphQL */ `
-  query OpenIssues($assigneeId: ID!, $after: String) {
-    issues(
-      first: 100
-      after: $after
-      filter: {
-        assignee: { id: { eq: $assigneeId } }
-        state: { type: { nin: ["completed", "canceled"] } }
+/** Teams a key can reach, for the venture picker. */
+export const TEAMS = /* GraphQL */ `
+  query Teams {
+    teams(first: 100) {
+      nodes {
+        id
+        key
+        name
       }
-    ) {
+    }
+  }
+`;
+
+export const OPEN_ISSUES = /* GraphQL */ `
+  query OpenIssues($filter: IssueFilter!, $after: String) {
+    issues(first: 100, after: $after, filter: $filter) {
       pageInfo {
         hasNextPage
         endCursor
@@ -81,9 +90,18 @@ export const OPEN_ISSUES = /* GraphQL */ `
   }
 `;
 
+/** Open issues assigned to `assigneeId`, narrowed to one team when given. */
+export function openIssuesFilter(assigneeId: string, teamId?: string | null) {
+  return {
+    assignee: { id: { eq: assigneeId } },
+    state: { type: { nin: ["completed", "canceled"] } },
+    ...(teamId ? { team: { id: { eq: teamId } } } : {}),
+  };
+}
+
 export const ACTIVE_PROJECTS = /* GraphQL */ `
-  query ActiveProjects($after: String) {
-    projects(first: 100, after: $after, filter: { state: { nin: ["completed", "canceled"] } }) {
+  query ActiveProjects($filter: ProjectFilter!, $after: String) {
+    projects(first: 100, after: $after, filter: $filter) {
       pageInfo {
         hasNextPage
         endCursor
@@ -98,6 +116,14 @@ export const ACTIVE_PROJECTS = /* GraphQL */ `
     }
   }
 `;
+
+/** Active projects, narrowed to those one team can reach when given. */
+export function activeProjectsFilter(teamId?: string | null) {
+  return {
+    state: { nin: ["completed", "canceled"] },
+    ...(teamId ? { accessibleTeams: { id: { eq: teamId } } } : {}),
+  };
+}
 
 /**
  * Scope estimate for one project: the sum of estimates across *all* its open
@@ -163,7 +189,6 @@ export const SET_ISSUE_STATE = /* GraphQL */ `
   }
 `;
 
-
 /**
  * Per-team estimation settings. Estimates are a team-level feature in Linear:
  * if a team has them switched off, every one of its issues returns a null
@@ -192,12 +217,8 @@ export const TEAM_ESTIMATION = /* GraphQL */ `
  * the app.
  */
 export const COMPLETED_SINCE = /* GraphQL */ `
-  query CompletedSince($assigneeId: ID!, $since: DateTimeOrDuration!, $after: String) {
-    issues(
-      first: 100
-      after: $after
-      filter: { assignee: { id: { eq: $assigneeId } }, completedAt: { gte: $since } }
-    ) {
+  query CompletedSince($filter: IssueFilter!, $after: String) {
+    issues(first: 100, after: $after, filter: $filter) {
       pageInfo {
         hasNextPage
         endCursor
@@ -217,3 +238,12 @@ export const COMPLETED_SINCE = /* GraphQL */ `
     }
   }
 `;
+
+/** Completed since an instant, narrowed to one team when given. */
+export function completedSinceFilter(assigneeId: string, since: string, teamId?: string | null) {
+  return {
+    assignee: { id: { eq: assigneeId } },
+    completedAt: { gte: since },
+    ...(teamId ? { team: { id: { eq: teamId } } } : {}),
+  };
+}

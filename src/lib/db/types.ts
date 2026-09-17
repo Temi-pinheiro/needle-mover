@@ -29,6 +29,8 @@ export type Workspace = {
   id: string;
   venture_name: string;
   linear_org_id: string | null;
+  linear_team_id: string | null;
+  linear_team_key: string | null;
   api_key: string;
   webhook_secret: string | null;
   active: boolean;

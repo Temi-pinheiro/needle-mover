@@ -14,7 +14,10 @@
 import { createLinearClient, LinearError } from "../src/lib/linear/client";
 import {
   ACTIVE_PROJECTS,
+  activeProjectsFilter,
   COMPLETED_SINCE,
+  completedSinceFilter,
+  openIssuesFilter,
   OPEN_ISSUES,
   PROJECT_SCOPE,
   TEAM_ESTIMATION,
@@ -73,14 +76,14 @@ async function main() {
     ? await step("open issues assigned to you, with relations", () =>
         client.request<{
           issues: { nodes: LinearIssueNode[]; pageInfo: { hasNextPage: boolean } };
-        }>(OPEN_ISSUES, { assigneeId: viewer.viewer.id, after: null }),
+        }>(OPEN_ISSUES, { filter: openIssuesFilter(viewer.viewer.id), after: null }),
       )
     : null;
 
   const projects = await step("active projects with targets", () =>
     client.request<{
       projects: { nodes: LinearProjectNode[]; pageInfo: { hasNextPage: boolean } };
-    }>(ACTIVE_PROJECTS, { after: null }),
+    }>(ACTIVE_PROJECTS, { filter: activeProjectsFilter(), after: null }),
   );
 
   if (projects?.projects.nodes.length) {
@@ -101,7 +104,7 @@ async function main() {
     const closed = await step("issues completed in the last 7 days (recap source)", () =>
       client.request<{ issues: { nodes: Array<{ identifier: string; completedAt: string }> } }>(
         COMPLETED_SINCE,
-        { assigneeId: viewer.viewer.id, since, after: null },
+        { filter: completedSinceFilter(viewer.viewer.id, since), after: null },
       ),
     );
     if (closed) console.log(`       ${closed.issues.nodes.length} closed in the last week`);

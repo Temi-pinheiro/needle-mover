@@ -2,7 +2,7 @@ import { db } from "@/lib/db/client";
 import { decrypt } from "@/lib/crypto";
 import type { Day, DayEvent, Issue, Project, Settings, Workspace } from "@/lib/db/types";
 import { createLinearClient, paginate, type Connection } from "@/lib/linear/client";
-import { COMPLETED_SINCE, VIEWER } from "@/lib/linear/queries";
+import { COMPLETED_SINCE, completedSinceFilter, VIEWER } from "@/lib/linear/queries";
 import { nowState } from "@/lib/day-state";
 import { localInstant } from "@/lib/time";
 
@@ -58,7 +58,7 @@ export async function closedToday(
       const nodes = await paginate(
         client,
         COMPLETED_SINCE,
-        { assigneeId: viewer.id, since },
+        { filter: completedSinceFilter(viewer.id, since, workspace.linear_team_id) },
         (data: {
           issues: Connection<{
             identifier: string;

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db/client";
-import { encrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 import { currentUser } from "@/lib/supabase/server";
 import { isValidTimezone } from "@/lib/time";
 import { createLinearClient } from "@/lib/linear/client";
@@ -138,4 +138,56 @@ export async function disconnectCalendar(): Promise<SettingsResult> {
 
   revalidatePath("/settings");
   return { ok: true, note: "Calendar disconnected. Calendar fit falls back to neutral." };
+}
+
+export type TeamOption = { id: string; key: string; name: string };
+
+/** Teams reachable with this venture's key, for the scope picker. */
+export async function listTeams(workspaceId: string): Promise<TeamOption[]> {
+  await guard();
+
+  const { data } = await db().from("workspaces").select("api_key").eq("id", workspaceId).maybeSingle();
+  const key = (data as { api_key: string } | null)?.api_key;
+  if (!key) return [];
+
+  const { TEAMS } = await import("@/lib/linear/queries");
+  const result = await createLinearClient(decrypt(key)).request<{
+    teams: { nodes: TeamOption[] };
+  }>(TEAMS);
+
+  return result.teams.nodes;
+}
+
+/**
+ * Scopes a venture to one Linear team, or back to the whole organisation.
+ *
+ * Clears this venture's cached rows on the way: they were fetched under the
+ * old scope, and leaving them would mean the next sync's mark-and-sweep is the
+ * only thing standing between you and issues from a team you just excluded.
+ */
+export async function setWorkspaceTeam(
+  workspaceId: string,
+  team: TeamOption | null,
+): Promise<SettingsResult> {
+  await guard();
+
+  const { error } = await db()
+    .from("workspaces")
+    .update({
+      linear_team_id: team?.id ?? null,
+      linear_team_key: team?.key ?? null,
+    })
+    .eq("id", workspaceId);
+
+  if (error) return { ok: false, note: error.message };
+
+  await db().from("issues").delete().eq("workspace_id", workspaceId);
+  await db().from("projects").delete().eq("workspace_id", workspaceId);
+
+  revalidatePath("/settings");
+  revalidatePath("/");
+  return {
+    ok: true,
+    note: team ? `Scoped to ${team.key}. Syncs on the next tick.` : "Scoped to the whole organisation.",
+  };
 }

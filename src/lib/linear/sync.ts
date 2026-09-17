@@ -2,7 +2,14 @@ import { db, unwrap } from "@/lib/db/client";
 import { decrypt } from "@/lib/crypto";
 import type { Workspace } from "@/lib/db/types";
 import { createLinearClient, paginate, type Connection, type LinearClient } from "./client";
-import { ACTIVE_PROJECTS, OPEN_ISSUES, PROJECT_SCOPE, VIEWER } from "./queries";
+import {
+  ACTIVE_PROJECTS,
+  activeProjectsFilter,
+  openIssuesFilter,
+  OPEN_ISSUES,
+  PROJECT_SCOPE,
+  VIEWER,
+} from "./queries";
 import { sumScope, toIssueRow, toProjectRow, type LinearIssueNode, type LinearProjectNode } from "./map";
 
 /**
@@ -68,7 +75,7 @@ async function syncProjects(
   const nodes = await paginate(
     client,
     ACTIVE_PROJECTS,
-    {},
+    { filter: activeProjectsFilter(workspace.linear_team_id) },
     (data: { projects: Connection<LinearProjectNode> }) => data.projects,
   );
 
@@ -115,7 +122,7 @@ async function syncIssues(
   const nodes = await paginate(
     client,
     OPEN_ISSUES,
-    { assigneeId },
+    { filter: openIssuesFilter(assigneeId, workspace.linear_team_id) },
     (data: { issues: Connection<LinearIssueNode> }) => data.issues,
   );
 

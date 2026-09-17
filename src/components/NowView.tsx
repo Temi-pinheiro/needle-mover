@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { blockTask, completeTask, startTask, type ActionResult } from "@/app/actions";
 import { ArrowUpRight, Check, Slash, Toggle } from "./icons";
 import { CloseDay } from "./CloseDay";
+import { HeaderNav } from "./HeaderNav";
 
 export type TaskCard = {
   id: string;
@@ -68,13 +69,10 @@ export function NowView(props: NowViewProps) {
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 md:py-24">
-      <header
-        className="enter mb-12 flex items-baseline justify-between gap-4 border-b border-line pb-5"
-        style={{ "--index": 0 } as React.CSSProperties}
-      >
-        <p className="label">{showingBackup ? "Backup task" : "Today’s needle mover"}</p>
-        <p className="font-mono text-[11px] text-ink-faint">{props.date}</p>
-      </header>
+      <HeaderNav
+        eyebrow={showingBackup ? "Backup task" : "Today’s needle mover"}
+        date={props.date}
+      />
 
       <div className="grid gap-6 md:grid-cols-12">
         {/* ---------------------------------------------------- the card -- */}
