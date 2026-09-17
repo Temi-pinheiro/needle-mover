@@ -67,6 +67,32 @@ async function refreshTimezone(settings: Settings): Promise<string> {
   }
 }
 
+/**
+ * Refreshes the local cache of every active workspace.
+ *
+ * Runs on every tick, not only when the brief fires. The Now view reads the
+ * cache, and until webhooks land in Phase 2 this is the only thing keeping it
+ * honest — without it the cache is empty until the first brief of the day, and
+ * picking a needle mover by hand before then finds nothing to rank.
+ */
+async function runSyncStep(log: string[]): Promise<void> {
+  const results = await syncAll();
+  if (results.length === 0) {
+    log.push("sync: no active workspaces");
+    return;
+  }
+
+  const failed = results.filter((r) => r.error);
+  const issues = results.reduce((n, r) => n + r.issues, 0);
+  const targeted = results.reduce((n, r) => n + r.targetedProjects, 0);
+
+  log.push(
+    `sync: ${results.length - failed.length}/${results.length} workspaces, ` +
+      `${issues} issues, ${targeted} targeted project(s)`,
+  );
+  for (const f of failed) log.push(`sync failed for ${f.ventureName}: ${f.error}`);
+}
+
 async function runBriefStep(day: Day, settings: Settings, now: Date, log: string[]): Promise<void> {
   if (day.brief_sent_at) {
     log.push("brief: already sent");
@@ -90,14 +116,6 @@ async function runBriefStep(day: Day, settings: Settings, now: Date, log: string
   }
 
   try {
-    const results = await syncAll();
-    const failed = results.filter((r) => r.error);
-    log.push(
-      `sync: ${results.length - failed.length}/${results.length} workspaces, ` +
-        `${results.reduce((n, r) => n + r.issues, 0)} issues`,
-    );
-    for (const f of failed) log.push(`sync failed for ${f.ventureName}: ${f.error}`);
-
     const plan = await planDay(now);
     if (plan.status === "no-candidates") {
       // Nothing to pick is a real state, not an error. Release so a later tick
@@ -183,6 +201,7 @@ export async function POST(request: Request) {
     const today = localDate(now, timezone);
     const day = await materializeDay(today, timezone);
 
+    await runSyncStep(log);
     await runBriefStep(day, current, now, log);
 
     // Phase 2 adds the midday nudge and the close-day reminder here. Both

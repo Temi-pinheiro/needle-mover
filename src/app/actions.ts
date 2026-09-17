@@ -79,7 +79,16 @@ export async function swapNeedleMover(
 /** Plans today on demand, for when TP opens the app before the brief fires. */
 export async function planToday(): Promise<ActionResult> {
   const { planDay } = await import("@/lib/day");
+  const { syncAll } = await import("@/lib/linear/sync");
   try {
+    // Sync first: picking from a stale cache would rank issues that were
+    // closed in Linear hours ago.
+    const synced = await syncAll();
+    const failed = synced.filter((s) => s.error);
+    if (synced.length > 0 && failed.length === synced.length) {
+      return { ok: false, note: `Could not reach Linear: ${failed[0].error}` };
+    }
+
     const result = await planDay(new Date());
     revalidatePath("/");
     if (result.status === "no-candidates") {
