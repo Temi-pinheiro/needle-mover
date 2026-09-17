@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PickError, resolvePick } from "./validate";
+import { PickError, resolvePick, shortlistRefs } from "./validate";
 import type { ScoredCandidate } from "@/lib/scoring/types";
 import type { Pick } from "./schema";
 
@@ -136,5 +136,55 @@ describe("resolvePick", () => {
     const r = resolvePick(pick({ first_step: "   " }), shortlist);
     expect(r.firstStep).toBe("");
     expect(r.repairs.join(" ")).toMatch(/first step was empty/);
+  });
+});
+
+describe("identifiers across separate Linear organisations", () => {
+  // Two ventures in different organisations can each have a team keyed ENG,
+  // so both produce ENG-1. Without qualification one silently overwrites the
+  // other and the pick resolves to the wrong issue.
+  const collided = [
+    scored("ENG-1", "Meridian", { total: 0.9 }),
+    scored("ENG-1", "Northbound", { total: 0.4 }),
+    scored("MEN-2", "Meridian", { total: 0.8 }),
+  ];
+
+  it("leaves identifiers bare when nothing collides", () => {
+    const { qualified, refOf } = shortlistRefs(shortlist);
+    expect(qualified).toBe(false);
+    expect(refOf(shortlist[0])).toBe("MEN-1");
+  });
+
+  it("qualifies every identifier once any of them collide", () => {
+    const { qualified, refOf } = shortlistRefs(collided);
+    expect(qualified).toBe(true);
+    expect(refOf(collided[0])).toBe("Meridian/ENG-1");
+    // Qualification is all-or-nothing, so the prompt never mixes two forms.
+    expect(refOf(collided[2])).toBe("Meridian/MEN-2");
+  });
+
+  it("keeps both colliding entries reachable", () => {
+    const { byRef } = shortlistRefs(collided);
+    expect(byRef.size).toBe(3);
+    expect(byRef.get("Northbound/ENG-1")?.candidate.issue.ventureName).toBe("Northbound");
+  });
+
+  it("resolves a qualified pick to the right venture", () => {
+    const r = resolvePick(
+      pick({ needle_mover: "Northbound/ENG-1", backup: "Meridian/MEN-2" }),
+      collided,
+    );
+    expect(r.needleMover.candidate.issue.ventureName).toBe("Northbound");
+    expect(r.repairs).toEqual([]);
+  });
+
+  it("falls back to the higher-scored entry when Claude drops the prefix", () => {
+    const r = resolvePick(pick({ needle_mover: "ENG-1", backup: "MEN-2" }), collided);
+    expect(r.needleMover.candidate.issue.ventureName).toBe("Meridian");
+    expect(r.repairs.join(" ")).toMatch(/ambiguous across ventures/);
+  });
+
+  it("still throws for an identifier on no shortlist entry at all", () => {
+    expect(() => resolvePick(pick({ needle_mover: "GHOST-1" }), collided)).toThrow(PickError);
   });
 });

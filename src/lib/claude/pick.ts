@@ -1,7 +1,7 @@
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { anthropic, MODELS } from "./client";
 import { PickSchema, type Pick } from "./schema";
-import { resolvePick, type ResolvedPick } from "./validate";
+import { resolvePick, shortlistRefs, type ResolvedPick } from "./validate";
 import { ALSO_TODAY_MAX_ITEMS, ALSO_TODAY_MAX_VENTURES } from "./validate";
 import { CARRYOVER_SPLIT_THRESHOLD } from "@/lib/scoring/weights";
 import type { ScoredCandidate, ScoringResult } from "@/lib/scoring/types";
@@ -33,11 +33,15 @@ Prefer the task that unblocks a target over the task that is merely urgent. A hi
 
 /** Renders the shortlist for the prompt: scores plus the facts behind them. */
 export function renderShortlist(shortlist: ScoredCandidate[]): string {
+  // Identifiers are qualified with the venture only when two ventures produce
+  // the same one; see shortlistRefs.
+  const { refOf } = shortlistRefs(shortlist);
+
   return shortlist
     .map((s, i) => {
       const { issue, project } = s.candidate;
       const bits = [
-        `${i + 1}. ${issue.identifier} — ${issue.title}`,
+        `${i + 1}. ${refOf(s)} — ${issue.title}`,
         `   venture: ${issue.ventureName}`,
         `   score: ${s.total.toFixed(3)} (${Object.entries(s.contributions)
           .filter(([, v]) => v > 0)

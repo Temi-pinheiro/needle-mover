@@ -24,28 +24,77 @@ export type ResolvedPick = {
   repairs: string[];
 };
 
+/**
+ * How Claude refers to a shortlist entry.
+ *
+ * Linear issue identifiers (TEM-6) are unique within an organisation but not
+ * across them: two organisations can each have a team keyed ENG, and both
+ * produce ENG-1. Since a venture can be a separate Linear organisation, the
+ * shortlist can contain two entries with the same identifier, and a map keyed
+ * on identifier alone would silently drop one — sending Claude's pick to the
+ * wrong issue with nothing to show for it.
+ *
+ * So identifiers are qualified with the venture only when they actually
+ * collide. The common case stays short and readable in the prompt and in logs.
+ */
+export function shortlistRefs(shortlist: ScoredCandidate[]) {
+  const counts = new Map<string, number>();
+  for (const s of shortlist) {
+    const id = s.candidate.issue.identifier;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  const qualified = [...counts.values()].some((n) => n > 1);
+
+  const refOf = (s: ScoredCandidate) =>
+    qualified
+      ? `${s.candidate.issue.ventureName}/${s.candidate.issue.identifier}`
+      : s.candidate.issue.identifier;
+
+  const byRef = new Map(shortlist.map((s) => [refOf(s), s]));
+
+  return { qualified, refOf, byRef };
+}
+
 export class PickError extends Error {}
 
 export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedPick {
   if (shortlist.length === 0) throw new PickError("Cannot resolve a pick from an empty shortlist.");
 
-  const byIdentifier = new Map(shortlist.map((s) => [s.candidate.issue.identifier, s]));
+  const { refOf, byRef, qualified } = shortlistRefs(shortlist);
   const repairs: string[] = [];
 
-  const needleMover = byIdentifier.get(pick.needle_mover);
+  /**
+   * Accepts the qualified form, and falls back to a bare identifier when
+   * Claude drops the venture prefix. An ambiguous bare identifier takes the
+   * higher-scored entry — the shortlist is already sorted — and says so.
+   */
+  const lookup = (ref: string): ScoredCandidate | null => {
+    const exact = byRef.get(ref);
+    if (exact) return exact;
+    if (!qualified) return null;
+
+    const matches = shortlist.filter((s) => s.candidate.issue.identifier === ref);
+    if (matches.length === 0) return null;
+    if (matches.length > 1) {
+      repairs.push(`"${ref}" was ambiguous across ventures; took ${refOf(matches[0])}`);
+    }
+    return matches[0];
+  };
+
+  const needleMover = lookup(pick.needle_mover);
   if (!needleMover) {
     // The one failure we don't paper over: picking the top-scored issue instead
     // would silently discard the reason and first step, which describe a
     // different task.
     throw new PickError(
-      `Claude picked ${pick.needle_mover}, which is not on the shortlist (${[...byIdentifier.keys()].join(", ")}).`,
+      `Claude picked ${pick.needle_mover}, which is not on the shortlist (${[...byRef.keys()].join(", ")}).`,
     );
   }
 
   // Backup: must exist, differ from the needle mover, and be startable on its
   // own. Falling back to the next-highest-scored issue keeps the Blocked button
   // useful rather than empty.
-  let backup = byIdentifier.get(pick.backup) ?? null;
+  let backup = lookup(pick.backup);
   if (backup && backup.candidate.issue.id === needleMover.candidate.issue.id) {
     repairs.push("backup matched the needle mover");
     backup = null;
@@ -68,7 +117,7 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
 
   const seen = new Set<string>();
   const candidates = pick.also_today
-    .map((id) => byIdentifier.get(id))
+    .map((id) => lookup(id))
     .filter((s): s is ScoredCandidate => {
       if (!s) return false;
       if (excluded.has(s.candidate.issue.id)) return false;
