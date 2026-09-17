@@ -7,7 +7,7 @@ import {
   scoreAll,
   unblocksOthers,
 } from "./score";
-import { DEFAULT_WEIGHTS, MIN_TARGETED_CANDIDATES, SHORTLIST_SIZE } from "./weights";
+import { DEFAULT_WEIGHTS, SHORTLIST_SIZE, targetedThreshold } from "./weights";
 import type { Candidate, CandidateIssue, CandidateProject, ScoringContext } from "./types";
 
 const TODAY = "2026-09-16";
@@ -156,22 +156,47 @@ describe("scoreAll", () => {
     expect(result.ranked.map((r) => r.candidate.issue.id)).toEqual(["open"]);
   });
 
+  /** `withTarget` of them sit in a targeted project; the rest do not. */
+  const mix = (withTarget: number, without: number): Candidate[] => [
+    ...targeted(withTarget),
+    ...Array.from({ length: without }, (_, i) => ({
+      issue: issue({ id: `u${i}`, identifier: `UNT-${i}` }),
+      project: null,
+    })),
+  ];
+
   it("keeps the spec weights when enough candidates are in targeted projects", () => {
-    const result = scoreAll(targeted(MIN_TARGETED_CANDIDATES), ctx());
+    // 4 of 7 clears the half-the-backlog test.
+    const result = scoreAll(mix(4, 3), ctx());
     expect(result.degraded).toBe(false);
     expect(result.weights).toEqual(DEFAULT_WEIGHTS);
   });
 
   it("renormalises goal leverage away when targeted projects are scarce", () => {
-    const result = scoreAll(targeted(MIN_TARGETED_CANDIDATES - 1), ctx());
+    // 2 of 7 does not: one targeted issue would collect 35% unopposed.
+    const result = scoreAll(mix(2, 5), ctx());
     expect(result.degraded).toBe(true);
     expect(result.weights.goalLeverage).toBe(0);
     const sum = Object.values(result.weights).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(1);
   });
 
+  it("scales the requirement with the backlog rather than using a fixed floor", () => {
+    // The old absolute floor of 8 was unreachable for a seven-issue backlog,
+    // so goal leverage could never switch on however well projects were kept.
+    expect(targetedThreshold(7)).toBe(4);
+    expect(targetedThreshold(20)).toBe(10);
+    expect(scoreAll(mix(4, 3), ctx()).degraded).toBe(false);
+  });
+
+  it("never demands more targeted candidates than exist", () => {
+    expect(targetedThreshold(2)).toBe(2);
+    expect(targetedThreshold(0)).toBe(0);
+    expect(scoreAll(mix(2, 0), ctx()).degraded).toBe(false);
+  });
+
   it("preserves the relative order of the surviving weights when renormalising", () => {
-    const { weights } = scoreAll(targeted(1), ctx());
+    const { weights } = scoreAll(mix(0, 6), ctx());
     expect(weights.deadlinePressure).toBeGreaterThan(weights.unblocksOthers);
     expect(weights.unblocksOthers).toBeCloseTo(weights.momentum);
     expect(weights.momentum).toBeGreaterThan(weights.calendarFit);

@@ -21,7 +21,7 @@ import {
 } from "../src/lib/linear/map";
 import { scoreAll } from "../src/lib/scoring/score";
 import type { Candidate } from "../src/lib/scoring/types";
-import { MIN_TARGETED_CANDIDATES } from "../src/lib/scoring/weights";
+import { targetedThreshold } from "../src/lib/scoring/weights";
 
 const key = process.env.LINEAR_API_KEY;
 if (!key) {
@@ -184,7 +184,7 @@ function report(
 
   if (result.degraded) {
     console.log(
-      `\n  Under ${MIN_TARGETED_CANDIDATES} candidates sit in a targeted project, so goal leverage was\n  renormalised away and every brief will be marked degraded.`,
+      `\n  Goal leverage needs ${targetedThreshold(result.ranked.length)} of these ${result.ranked.length} in a targeted project and has\n  ${result.targetedCount}, so it was renormalised away and every brief is marked degraded.`,
     );
   }
 

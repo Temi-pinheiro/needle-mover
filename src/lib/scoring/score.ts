@@ -3,12 +3,12 @@ import {
   DEADLINE_HORIZON_DAYS,
   DEFAULT_WEIGHTS,
   HOURS_PER_ESTIMATE_POINT,
-  MIN_TARGETED_CANDIDATES,
   MOMENTUM_IN_PROGRESS,
   MOMENTUM_PER_CARRYOVER_DAY,
   NEUTRAL,
   PRIORITY_SCORE,
   SHORTLIST_SIZE,
+  targetedThreshold,
   UNBLOCKS_SATURATION,
 } from "./weights";
 import type {
@@ -127,7 +127,7 @@ export function scoreAll(
   const eligible = candidates.filter((c) => !c.issue.isBlocked);
 
   const targetedCount = eligible.filter((c) => Boolean(c.project?.targetDate)).length;
-  const degraded = targetedCount < MIN_TARGETED_CANDIDATES;
+  const degraded = targetedCount < targetedThreshold(eligible.length);
   const weights = degraded ? renormalise(baseWeights) : baseWeights;
 
   const ranked = eligible
