@@ -12,6 +12,7 @@ export type Settings = {
   close_cutoff_time: string;
   timezone: string;
   weekdays_only: boolean;
+  paused_until: string | null;
   updated_at: string;
 };
 

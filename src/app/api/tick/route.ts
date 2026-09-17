@@ -104,6 +104,12 @@ async function runBriefStep(day: Day, settings: Settings, now: Date, log: string
     return;
   }
 
+  // Held off deliberately. Compared as plain local dates, inclusive.
+  if (settings.paused_until && day.date <= settings.paused_until) {
+    log.push(`brief: paused until ${settings.paused_until}`);
+    return;
+  }
+
   const briefTime = settings.brief_time.slice(0, 5);
   if (!hasPassed(now, briefTime, settings.timezone)) {
     log.push(`brief: not yet (${localTime(now, settings.timezone)} < ${briefTime})`);

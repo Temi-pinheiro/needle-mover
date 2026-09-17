@@ -59,6 +59,8 @@ async function settings() {
     close_cutoff_time: arg("cutoff") ?? current?.close_cutoff_time ?? "19:00",
     weekdays_only:
       arg("weekends") !== undefined ? arg("weekends") !== "true" : (current?.weekdays_only ?? true),
+    paused_until:
+      process.argv.includes("--resume") ? null : (arg("pause-until") ?? current?.paused_until ?? null),
     updated_at: new Date().toISOString(),
   };
 
@@ -68,7 +70,10 @@ async function settings() {
   console.log(`\n${current ? "Settings updated" : "Settings saved"}.`);
   console.log(`  brief   ${row.brief_time} ${row.timezone}${row.weekdays_only ? " (weekdays)" : " (every day)"}`);
   console.log(`  cutoff  ${row.close_cutoff_time}`);
-  console.log(`  email   ${row.email}\n`);
+  console.log(`  email   ${row.email}`);
+  console.log(
+    row.paused_until ? `  paused  through ${row.paused_until}\n` : "  paused  no\n",
+  );
   console.log(`The timezone refreshes from your primary Google Calendar on every tick,`);
   console.log(`so this value only matters until Calendar is connected.\n`);
 }
@@ -99,15 +104,35 @@ async function workspace() {
 
 async function show() {
   const db = client();
-  const [{ data: s }, { data: w }, { data: g }] = await Promise.all([
-    db.from("settings").select("email, brief_time, close_cutoff_time, timezone, weekdays_only").maybeSingle(),
+  const [settingsRes, workspacesRes, googleRes] = await Promise.all([
+    db
+      .from("settings")
+      .select("email, brief_time, close_cutoff_time, timezone, weekdays_only, paused_until")
+      .maybeSingle(),
     db.from("workspaces").select("venture_name, active, is_private, last_synced_at"),
     db.from("google_accounts").select("email, timezone").maybeSingle(),
   ]);
 
-  console.log("\nSettings  ", s ?? "not set — run `pnpm seed settings`");
-  console.log("Calendar  ", g ?? "not connected — visit /api/google/start once signed in");
-  console.log("Ventures  ", w?.length ? w : "none — run `pnpm seed workspace`");
+  // A failed query is not an empty one. Reporting "not set" for a column that
+  // does not exist sends you looking for a missing row that is right there.
+  const value = <T, E>(
+    res: { data: T | null; error: { message: string } | null },
+    empty: E,
+  ): T | E | string => {
+    if (res.error) return `QUERY FAILED — ${res.error.message}`;
+    return res.data ?? empty;
+  };
+
+  console.log("\nSettings  ", value(settingsRes, "not set — run `pnpm seed settings`"));
+  console.log("Calendar  ", value(googleRes, "not connected — visit /api/google/start"));
+
+  const workspaces = value(workspacesRes, []);
+  console.log(
+    "Ventures  ",
+    Array.isArray(workspaces) && workspaces.length === 0
+      ? "none — run `pnpm seed workspace`"
+      : workspaces,
+  );
   console.log();
 }
 
