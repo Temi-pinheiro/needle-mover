@@ -227,9 +227,31 @@ function report(
   }
 
   if (tiedAtTop > 1 || spread < 0.05) {
-    console.log(
-      `\n  The scoring cannot separate these. Claude would be picking from a\n  shortlist that is effectively unordered, which is a coin toss rather\n  than a ranking. Target dates on your active projects are the fix that\n  buys the most: they switch goal leverage back on and give deadline\n  pressure something to measure.`,
-    );
+    // Name the signal that is actually missing rather than always blaming
+    // target dates — once those are in, the next tie is a different problem.
+    const withEstimate = nodes.filter((n) => n.estimate != null).length;
+    const withDue = nodes.filter((n) => n.dueDate).length;
+    const unblocking = nodes.filter((n) => deriveRelations(n).blocksCount > 0).length;
+
+    console.log(`\n  ${tiedAtTop} candidates are tied at the top.`);
+
+    if (inTargeted < nodes.length / 2) {
+      console.log(
+        `\n  Target dates are the fix that buys the most: only ${inTargeted} of ${nodes.length}\n  candidates sit in a targeted project, so goal leverage is switched off.`,
+      );
+    } else if (withEstimate < nodes.length / 2) {
+      console.log(
+        `\n  Estimates are the fix that buys the most. Only ${withEstimate} of ${nodes.length} have one,\n  so scope share falls back to neutral for the rest — and two issues in the\n  same project with the same priority then score *identically* on goal\n  leverage. An estimate is what separates them.`,
+      );
+    } else if (withDue === 0 && unblocking === 0) {
+      console.log(
+        `\n  Nothing carries an issue-level due date or a blocks relation, so deadline\n  pressure is uniform within a project and unblocking contributes nothing.\n  Either signal would break the remaining ties.`,
+      );
+    } else {
+      console.log(
+        `\n  The remaining ties are between genuinely comparable issues. Claude breaks\n  them on judgement the score cannot see, which is the design working.`,
+      );
+    }
   } else {
     console.log(`\n  The scoring separates these cleanly enough for the pick to mean something.`);
   }
