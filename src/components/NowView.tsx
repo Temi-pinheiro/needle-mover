@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { blockTask, completeTask, startTask, type ActionResult } from "@/app/actions";
 import { ArrowUpRight, Check, Slash, Toggle } from "./icons";
+import { CloseDay } from "./CloseDay";
 
 export type TaskCard = {
   id: string;
@@ -186,6 +187,10 @@ export function NowView(props: NowViewProps) {
           </article>
 
           <AlsoToday items={alsoToday} />
+
+          <div className="mt-2 border-t border-line">
+            <CloseDay />
+          </div>
         </section>
 
         {/* ---------------------------------------------------- the rail -- */}

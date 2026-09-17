@@ -89,6 +89,9 @@ export type Day = {
   nudge_sent_at: string | null;
   reminder_sent_at: string | null;
   recap_sent_at: string | null;
+  recap_summary: string | null;
+  recap_tomorrow_note: string | null;
+  recap_tomorrow_id: string | null;
   created_at: string;
 };
 

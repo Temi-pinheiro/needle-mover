@@ -254,3 +254,87 @@ export async function logEvent(
     note: fields.note ?? null,
   });
 }
+
+/**
+ * Closing the day.
+ *
+ * Order matters: sync first so "closed today" and the progress figures are
+ * current, then snapshot, then gather. Snapshotting before the sync would
+ * report yesterday's numbers as today's close.
+ */
+export type CloseResult =
+  | { status: "closed"; recapSent: boolean; note?: string }
+  | { status: "already-closed" };
+
+export async function closeDay(now: Date): Promise<CloseResult> {
+  const settings = await getSettings();
+  const today = localDate(now, settings.timezone);
+  const day = await materializeDay(today, settings.timezone);
+
+  if (day.status === "closed") return { status: "already-closed" };
+
+  const { syncAll } = await import("@/lib/linear/sync");
+  await syncAll();
+  await snapshotProgress(today, "close");
+
+  const { gatherRecap } = await import("@/lib/recap");
+  const facts = await gatherRecap(day, settings);
+
+  // Tomorrow's candidate comes from the scorer, not from Claude — the same
+  // ranking that will run in the morning, so the recap does not promise
+  // something the brief then contradicts.
+  const [candidates, carryOver] = await Promise.all([
+    loadCandidates(),
+    carryOverMap(addDays(today, 1)),
+  ]);
+  const ranked = scoreAll(candidates, {
+    today: addDays(today, 1),
+    largestFreeBlockHours: null,
+    carryOver,
+  });
+  const top = ranked.ranked[0]?.candidate.issue ?? null;
+  const tomorrow = top
+    ? { identifier: top.identifier, title: top.title, ventureName: top.ventureName }
+    : null;
+
+  const { writeRecap } = await import("@/lib/claude/recap");
+  const text = await writeRecap(facts, tomorrow);
+
+  await db()
+    .from("days")
+    .update({
+      status: "closed",
+      closed_at: new Date().toISOString(),
+      recap_summary: text.summary,
+      recap_tomorrow_note: text.tomorrow_note,
+      recap_tomorrow_id: top?.id ?? null,
+    })
+    .eq("id", day.id);
+
+  // The day is closed either way; a failed send is reported, not fatal.
+  let recapSent = false;
+  let note: string | undefined;
+  try {
+    const { sendRecap } = await import("@/lib/email/send");
+    await sendRecap(settings.email, {
+      date: today,
+      summary: text.summary,
+      needleMover: facts.needleMover,
+      needleMoverDone: facts.needleMoverDone,
+      blockReason: facts.blockReason,
+      closed: facts.closed,
+      movements: facts.movements,
+      tomorrow,
+      tomorrowNote: text.tomorrow_note,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    });
+    await db().from("days").update({ recap_sent_at: new Date().toISOString() }).eq("id", day.id);
+    recapSent = true;
+  } catch (err) {
+    note = `The day is closed, but the recap email did not send: ${
+      err instanceof Error ? err.message : String(err)
+    }`;
+  }
+
+  return { status: "closed", recapSent, note };
+}

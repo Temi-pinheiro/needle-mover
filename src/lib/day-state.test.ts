@@ -21,6 +21,9 @@ const day = (over: Partial<Day> = {}): Day => ({
   nudge_sent_at: null,
   reminder_sent_at: null,
   recap_sent_at: null,
+  recap_summary: null,
+  recap_tomorrow_note: null,
+  recap_tomorrow_id: null,
   created_at: "2026-09-16T06:00:00Z",
   ...over,
 });

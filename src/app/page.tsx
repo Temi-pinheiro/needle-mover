@@ -6,6 +6,7 @@ import { needsSplitPrompt } from "@/lib/scoring/score";
 import { localDate, localTime } from "@/lib/time";
 import { planToday } from "./actions";
 import { NowView, type TaskCard } from "@/components/NowView";
+import { DayClosed } from "@/components/DayClosed";
 import { Notice } from "@/components/Notice";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,42 @@ export default async function Page() {
         title="Today has not been picked yet."
         body="The morning brief runs on a schedule, but you can pull it forward. This syncs every connected workspace, scores what is open, and asks Claude to choose."
         action={{ label: "Pick today’s needle mover", run: planToday }}
+      />
+    );
+  }
+
+  // A closed day shows the recap, read from the row rather than regenerated,
+  // so the page and the email can never disagree.
+  if (day.status === "closed") {
+    const { closedToday, projectMovements } = await import("@/lib/recap");
+    const [closed, movements] = await Promise.all([
+      closedToday(day.date, settings.timezone, workspaces),
+      projectMovements(day.date),
+    ]);
+
+    const tomorrowIssue = day.recap_tomorrow_id
+      ? ((await db().from("issues").select("*").eq("id", day.recap_tomorrow_id).maybeSingle())
+          .data as Issue | null)
+      : null;
+
+    return (
+      <DayClosed
+        date={today}
+        summary={day.recap_summary}
+        closed={closed}
+        movements={movements}
+        tomorrow={
+          tomorrowIssue
+            ? {
+                identifier: tomorrowIssue.identifier,
+                title: tomorrowIssue.title,
+                ventureName:
+                  workspaces.find((w) => w.id === tomorrowIssue.workspace_id)?.venture_name ??
+                  "Unknown",
+              }
+            : null
+        }
+        tomorrowNote={day.recap_tomorrow_note}
       />
     );
   }

@@ -99,3 +99,22 @@ export async function planToday(): Promise<ActionResult> {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };
   }
 }
+
+/** Closes the day: snapshots progress, writes the recap, emails it. */
+export async function closeToday(): Promise<ActionResult> {
+  const { closeDay } = await import("@/lib/day");
+  try {
+    const result = await closeDay(new Date());
+    revalidatePath("/");
+
+    if (result.status === "already-closed") {
+      return { ok: true, note: "Today was already closed." };
+    }
+    return {
+      ok: true,
+      note: result.recapSent ? undefined : result.note,
+    };
+  } catch (err) {
+    return { ok: false, note: err instanceof Error ? err.message : String(err) };
+  }
+}
