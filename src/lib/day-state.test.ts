@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nowState } from "./day-state";
+import { issueStates, nowState } from "./day-state";
 import type { Day, DayEvent } from "@/lib/db/types";
 
 const day = (over: Partial<Day> = {}): Day => ({
@@ -9,6 +9,7 @@ const day = (over: Partial<Day> = {}): Day => ({
   needle_mover_id: "nm",
   backup_id: "bk",
   also_today_ids: [],
+  also_today_reasons: {},
   reason: "because",
   first_step: "Open the doc.",
   plain_focus: "Deep work.",
@@ -106,5 +107,34 @@ describe("nowState", () => {
     const s = nowState(day({ needle_mover_id: null, backup_id: null }), []);
     expect(s.activeIssueId).toBeNull();
     expect(s.started).toBe(false);
+  });
+});
+
+describe("issueStates", () => {
+  it("is empty when nothing has happened", () => {
+    expect(issueStates([]).size).toBe(0);
+  });
+
+  it("tracks each issue independently", () => {
+    const states = issueStates([
+      event("started", "a"),
+      event("done", "a"),
+      event("started", "b"),
+    ]);
+    expect(states.get("a")).toEqual({ started: true, done: true });
+    // b was started and not finished; a's completion must not leak onto it.
+    expect(states.get("b")).toEqual({ started: true, done: false });
+  });
+
+  it("records done without started, since Done can be pressed directly", () => {
+    expect(issueStates([event("done", "c")]).get("c")).toEqual({ started: false, done: true });
+  });
+
+  it("ignores events with no issue attached", () => {
+    expect(issueStates([event("nudged", null)]).size).toBe(0);
+  });
+
+  it("treats an unmentioned issue as neither started nor done", () => {
+    expect(issueStates([event("started", "a")]).get("never-touched")).toBeUndefined();
   });
 });

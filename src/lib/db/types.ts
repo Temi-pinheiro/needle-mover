@@ -79,6 +79,7 @@ export type Day = {
   needle_mover_id: string | null;
   backup_id: string | null;
   also_today_ids: string[];
+  also_today_reasons: Record<string, string>;
   reason: string | null;
   first_step: string | null;
   plain_focus: string | null;

@@ -37,6 +37,10 @@ const shortlist = [
   scored("ZED-2", "Zed", { total: 0.4 }),
 ];
 
+/** Shorthand for an also-today entry, since only the identifier matters here. */
+const also = (...identifiers: string[]) =>
+  identifiers.map((identifier) => ({ identifier, reason: "worth a look" }));
+
 const pick = (over: Partial<Pick> = {}): Pick => ({
   needle_mover: "MEN-1",
   backup: "ACM-1",
@@ -49,10 +53,10 @@ const pick = (over: Partial<Pick> = {}): Pick => ({
 
 describe("resolvePick", () => {
   it("resolves a clean pick with no repairs", () => {
-    const r = resolvePick(pick({ also_today: ["MEN-2", "ACM-2"] }), shortlist);
+    const r = resolvePick(pick({ also_today: also("MEN-2", "ACM-2") }), shortlist);
     expect(r.needleMover.candidate.issue.identifier).toBe("MEN-1");
     expect(r.backup?.candidate.issue.identifier).toBe("ACM-1");
-    expect(r.alsoToday.map((a) => a.candidate.issue.identifier)).toEqual(["MEN-2", "ACM-2"]);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MEN-2", "ACM-2"]);
     expect(r.repairs).toEqual([]);
   });
 
@@ -89,19 +93,19 @@ describe("resolvePick", () => {
 
   it("drops also-today items that are unknown, duplicated or already chosen", () => {
     const r = resolvePick(
-      pick({ also_today: ["MEN-1", "ACM-1", "MEN-2", "MEN-2", "GHOST"] }),
+      pick({ also_today: also("MEN-1", "ACM-1", "MEN-2", "MEN-2", "GHOST") }),
       shortlist,
     );
-    expect(r.alsoToday.map((a) => a.candidate.issue.identifier)).toEqual(["MEN-2"]);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MEN-2"]);
     expect(r.repairs.join(" ")).toMatch(/unusable/);
   });
 
   it("allows exactly two ventures in also today", () => {
     const r = resolvePick(
-      pick({ needle_mover: "MEN-1", backup: "MEN-2", also_today: ["ACM-1", "ACM-2", "ZED-1"] }),
+      pick({ needle_mover: "MEN-1", backup: "MEN-2", also_today: also("ACM-1", "ACM-2", "ZED-1") }),
       shortlist,
     );
-    expect(r.alsoToday.map((a) => a.candidate.issue.identifier)).toEqual(["ACM-1", "ACM-2", "ZED-1"]);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["ACM-1", "ACM-2", "ZED-1"]);
     expect(r.repairs).toEqual([]);
   });
 
@@ -111,13 +115,13 @@ describe("resolvePick", () => {
       pick({
         needle_mover: "MEN-1",
         backup: "MEN-2",
-        also_today: ["ACM-1", "ZED-1", "QRX-1", "ACM-2"],
+        also_today: also("ACM-1", "ZED-1", "QRX-1", "ACM-2"),
       }),
       list,
     );
-    const ventures = new Set(r.alsoToday.map((a) => a.candidate.issue.ventureName));
+    const ventures = new Set(r.alsoToday.map((a) => a.candidate.candidate.issue.ventureName));
     expect(ventures).toEqual(new Set(["Acme", "Zed"]));
-    expect(r.alsoToday.map((a) => a.candidate.issue.identifier)).toEqual(["ACM-1", "ZED-1", "ACM-2"]);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["ACM-1", "ZED-1", "ACM-2"]);
     expect(r.repairs.join(" ")).toMatch(/2 ventures/);
   });
 
@@ -125,7 +129,7 @@ describe("resolvePick", () => {
     const big = Array.from({ length: 8 }, (_, i) => scored(`MEN-${i + 10}`, "Meridian"));
     const list = [shortlist[0], ...big];
     const r = resolvePick(
-      pick({ backup: "MEN-10", also_today: big.slice(1).map((b) => b.candidate.issue.identifier) }),
+      pick({ backup: "MEN-10", also_today: also(...big.slice(1).map((b) => b.candidate.issue.identifier)) }),
       list,
     );
     expect(r.alsoToday).toHaveLength(5);

@@ -25,6 +25,7 @@ const PROBES: Probe[] = [
   { file: "0004_recap_text", what: "recap shown in the app", kind: "column", table: "days", column: "recap_summary" },
   { file: "0005_webhook_secret", what: "per-venture webhook secrets", kind: "backfill", table: "workspaces", column: "webhook_secret" },
   { file: "0006_team_scoping", what: "venture scoped to a Linear team", kind: "column", table: "workspaces", column: "linear_team_id" },
+  { file: "0007_also_today_reasons", what: "reasons on also-today items", kind: "column", table: "days", column: "also_today_reasons" },
 ];
 
 async function main() {

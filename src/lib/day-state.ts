@@ -23,6 +23,30 @@ export type NowState = {
   needleMoverDone: boolean;
 };
 
+/** Started and done for one issue, whichever issue it is. */
+export type IssueState = { started: boolean; done: boolean };
+
+/**
+ * State for every issue mentioned in the day's events.
+ *
+ * The Now card needs this for the active task, and each "also today" row needs
+ * it for itself — a Start button that does not know the task is already
+ * started is worse than no button.
+ */
+export function issueStates(events: DayEvent[]): Map<string, IssueState> {
+  const states = new Map<string, IssueState>();
+
+  for (const event of events) {
+    if (!event.issue_id) continue;
+    const current = states.get(event.issue_id) ?? { started: false, done: false };
+    if (event.type === "started") current.started = true;
+    if (event.type === "done") current.done = true;
+    states.set(event.issue_id, current);
+  }
+
+  return states;
+}
+
 export function nowState(day: Day, events: DayEvent[]): NowState {
   const ordered = [...events].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),

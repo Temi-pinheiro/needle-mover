@@ -1,7 +1,7 @@
 import { db } from "@/lib/db/client";
 import type { DayEvent, Issue, Project, Workspace } from "@/lib/db/types";
 import { carryOverMap, getSettings, materializeDay } from "@/lib/day";
-import { nowState } from "@/lib/day-state";
+import { issueStates, nowState } from "@/lib/day-state";
 import { needsSplitPrompt } from "@/lib/scoring/score";
 import { localDate, localTime } from "@/lib/time";
 import { planToday } from "./actions";
@@ -93,6 +93,7 @@ export default async function Page() {
   const events = ((await db().from("day_events").select("*").eq("day_id", day.id)).data ??
     []) as DayEvent[];
   const state = nowState(day, events);
+  const states = issueStates(events);
 
   const ids = [state.activeIssueId, ...day.also_today_ids].filter(
     (id): id is string => typeof id === "string",
@@ -158,7 +159,19 @@ export default async function Page() {
       alsoToday={day.also_today_ids
         .map((id) => issues.find((i) => i.id === id))
         .filter((i): i is Issue => Boolean(i))
-        .map(toCard)}
+        .map((issue) => {
+          const state = states.get(issue.id);
+          return {
+            id: issue.id,
+            identifier: issue.identifier,
+            title: issue.title,
+            url: issue.url,
+            ventureName: ventureById.get(issue.workspace_id) ?? "Unknown",
+            reason: day.also_today_reasons?.[issue.id] ?? "",
+            started: state?.started ?? false,
+            done: state?.done ?? false,
+          };
+        })}
     />
   );
 }

@@ -208,7 +208,10 @@ export async function planDay(now: Date): Promise<PlanResult> {
       .update({
         needle_mover_id: pick.needleMover.candidate.issue.id,
         backup_id: pick.backup?.candidate.issue.id ?? null,
-        also_today_ids: pick.alsoToday.map((a) => a.candidate.issue.id),
+        also_today_ids: pick.alsoToday.map((a) => a.candidate.candidate.issue.id),
+        also_today_reasons: Object.fromEntries(
+          pick.alsoToday.map((a) => [a.candidate.candidate.issue.id, a.reason]),
+        ),
         reason: pick.reason,
         first_step: pick.firstStep,
         plain_focus: pick.plainFocus,

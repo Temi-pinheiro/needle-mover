@@ -26,7 +26,8 @@ Rules, all of which are hard requirements:
 - The backup must stay startable even if the needle mover turns out to be blocked, so do not pick a backup that depends on the same work, the same person or the same decision. It may come from any venture.
 - The first step is one physical action that takes under 10 minutes and starts with a verb. It must be something you could do without deciding anything else first. Good: "Open the Meridian pricing doc and list three tiers." Bad: "Think about pricing", "Start the pricing work".
 - The reason is one or two sentences naming the project target this advances and why it outranked the runners-up. Do not restate the score.
-- "Also today" is at most ${ALSO_TODAY_MAX_ITEMS} identifiers drawn from at most ${ALSO_TODAY_MAX_VENTURES} ventures, excluding the needle mover and the backup. Fewer is better; return an empty list if nothing else is worth the attention.
+- "Also today" is at most ${ALSO_TODAY_MAX_ITEMS} items drawn from at most ${ALSO_TODAY_MAX_VENTURES} ventures, excluding the needle mover and the backup. Fewer is better; return an empty list if nothing else is worth the attention.
+- Each "also today" item carries one short clause saying why it earned a place, written to be read after the needle mover is already finished. Say what it unblocks or what it is running out of time against. "Unblocks the webhook and the first real brief" is useful; "important task" is not.
 - The plain focus line describes the needle mover to a friend: no venture names, client names, product names or jargon. One short sentence.
 
 Prefer the task that unblocks a target over the task that is merely urgent. A high score with a distant target is worth less than a moderate score on a target that lands this month.`;

@@ -17,8 +17,15 @@ export const PickSchema = z.object({
     .string()
     .describe("One physical action under 10 minutes, starting with a verb"),
   also_today: z
-    .array(z.string())
-    .describe("Up to 5 other identifiers worth touching today, drawn from at most 2 ventures"),
+    .array(
+      z.object({
+        identifier: z.string(),
+        reason: z
+          .string()
+          .describe("One short clause on why this is worth touching today. No full stop needed."),
+      }),
+    )
+    .describe("Up to 5 other items worth touching today, drawn from at most 2 ventures"),
   plain_focus: z
     .string()
     .describe(

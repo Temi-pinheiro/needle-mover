@@ -13,10 +13,13 @@ import type { Pick } from "./schema";
 export const ALSO_TODAY_MAX_ITEMS = 5;
 export const ALSO_TODAY_MAX_VENTURES = 2;
 
+/** An "also today" item and why it earned a place. */
+export type AlsoTodayItem = { candidate: ScoredCandidate; reason: string };
+
 export type ResolvedPick = {
   needleMover: ScoredCandidate;
   backup: ScoredCandidate | null;
-  alsoToday: ScoredCandidate[];
+  alsoToday: AlsoTodayItem[];
   reason: string;
   firstStep: string;
   plainFocus: string;
@@ -117,12 +120,16 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
 
   const seen = new Set<string>();
   const candidates = pick.also_today
-    .map((id) => lookup(id))
-    .filter((s): s is ScoredCandidate => {
-      if (!s) return false;
-      if (excluded.has(s.candidate.issue.id)) return false;
-      if (seen.has(s.candidate.issue.id)) return false;
-      seen.add(s.candidate.issue.id);
+    .map((entry) => {
+      const found = lookup(entry.identifier);
+      return found ? { candidate: found, reason: entry.reason.trim() } : null;
+    })
+    .filter((item): item is AlsoTodayItem => {
+      if (!item) return false;
+      const id = item.candidate.candidate.issue.id;
+      if (excluded.has(id)) return false;
+      if (seen.has(id)) return false;
+      seen.add(id);
       return true;
     });
 
@@ -133,9 +140,9 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
   }
 
   const ventures = new Set<string>();
-  const alsoToday: ScoredCandidate[] = [];
+  const alsoToday: AlsoTodayItem[] = [];
   for (const item of candidates) {
-    const venture = item.candidate.issue.ventureName;
+    const venture = item.candidate.candidate.issue.ventureName;
     if (!ventures.has(venture) && ventures.size >= ALSO_TODAY_MAX_VENTURES) {
       repairs.push(`"also today" exceeded ${ALSO_TODAY_MAX_VENTURES} ventures`);
       continue;

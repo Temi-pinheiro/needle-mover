@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { blockTask, completeTask, startTask, type ActionResult } from "@/app/actions";
-import { ArrowUpRight, Check, Slash, Toggle } from "./icons";
+import { ArrowUpRight, Check, Slash } from "./icons";
+import { AlsoToday, type AlsoTodayItem } from "./AlsoToday";
 import { CloseDay } from "./CloseDay";
 import { HeaderNav } from "./HeaderNav";
 
@@ -31,7 +32,7 @@ export type NowViewProps = {
   carryOverDays: number;
   needsSplit: boolean;
   degraded: boolean;
-  alsoToday: TaskCard[];
+  alsoToday: AlsoTodayItem[];
 };
 
 export function NowView(props: NowViewProps) {
@@ -184,7 +185,7 @@ export function NowView(props: NowViewProps) {
             )}
           </article>
 
-          <AlsoToday items={alsoToday} />
+          <AlsoToday dayId={dayId} items={alsoToday} openByDefault={done} />
 
           <div className="mt-2 border-t border-line">
             <CloseDay />
@@ -350,56 +351,6 @@ function Note({
     <div>
       <p className={`label mb-1.5 ${labelColor}`}>{label}</p>
       <p className="text-[13px] leading-relaxed text-ink-muted">{children}</p>
-    </div>
-  );
-}
-
-/**
- * The drawer. Items are separated by a hairline rather than boxed, per the
- * accordion convention. Animates grid-template-rows 0fr→1fr, which is the one
- * clean way to reach intrinsic height; it costs a layout pass, acceptable for
- * five rows opened by hand once a day and never during scroll.
- */
-function AlsoToday({ items }: { items: TaskCard[] }) {
-  const [open, setOpen] = useState(false);
-  if (items.length === 0) return null;
-
-  return (
-    <div className="enter mt-6" style={{ "--index": 3 } as React.CSSProperties}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="pressable flex w-full items-center justify-between border-b border-line py-3.5 text-left transition-colors hover:border-line-strong"
-      >
-        <span className="label">Also today · {items.length}</span>
-        <Toggle open={open} className="text-ink-faint" />
-      </button>
-
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
-      >
-        <div className="overflow-hidden">
-          <ul>
-            {items.map((item) => (
-              <li key={item.id} className="border-b border-line last:border-b-0">
-                <a
-                  href={item.url ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex items-baseline gap-4 py-3.5 transition-opacity duration-200 hover:opacity-70"
-                >
-                  <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-faint">
-                    {item.ventureName}
-                  </span>
-                  <span className="flex-1 text-[14px] leading-snug text-ink-soft">{item.title}</span>
-                  <ArrowUpRight className="shrink-0 -translate-y-px text-ink-faint opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }
