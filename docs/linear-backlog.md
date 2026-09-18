@@ -675,3 +675,166 @@ priority: 4
 Promised when the throwaway harness was skipped, and largely superseded by what `linear:check` now prints on the command line.
 
 Still worth having in-app when a pick looks wrong and the question is *why* — per-candidate contributions, the weights actually applied, and whether the day ran degraded.
+
+@@MILESTONE | Open source release
+---
+Ship this as a self-host template, given away free. Not a hosted service: the goal is goodwill in the Linear and indie community ahead of a later paid product, not revenue from this.
+
+That decision settles several open questions rather than deferring them. The singleton schema is correct rather than debt, because one instance per person is the shape. Bring-your-own-keys is right for every service, because there is no operator in the middle to hold anything. Guest links get materially safer, because each person's links live on their own deployment and a projection bug is a personal embarrassment rather than a breach across customers.
+
+What it makes newly important is everything that assumes the person running this was here when it was written.
+
+@@ISSUE | Scrub personal and client information before the repo is public
+state: todo
+milestone: Open source release
+labels: chore, docs
+priority: 1
+---
+Tracked files currently carry things that should not be published.
+
+`context.md` contains a personal email address, the Linear organisation slug, venture names, and a colleague's first name. `docs/linear-backlog.md` and the preview fixtures in `src/app/preview/page.tsx` also name that colleague, in copy that was written as realistic sample data.
+
+The harder half: **git history carries all of it too**, so editing the files does not fix it. Three options, in increasing effort — accept it and scrub only the working tree, rewrite history with filter-repo before the first push, or start a clean public repository and import the code as one commit.
+
+Worth deciding before any push, because the first push is the point of no return.
+
+@@ISSUE | Migrations a stranger can apply
+state: todo
+milestone: Open source release
+labels: data, ops
+priority: 1
+---
+Migrations are currently pasted by hand into the Supabase SQL editor, and `pnpm migrations` exists because there is no migrations table to consult — it probes for a column each one adds to work out what landed.
+
+That is a reasonable arrangement for the person who was present when each migration was written. For someone cloning the repo it is the first thing they hit and the most likely thing to make them give up.
+
+Needs either `supabase db push` against a linked project, or a single setup command that applies everything in order and reports what it did. The probe script stays useful either way, as a verification step rather than the mechanism.
+
+@@ISSUE | README with the deploy story
+state: todo
+milestone: Open source release
+labels: docs
+priority: 1
+---
+There is no README. Someone arriving cold has no idea what this is, who it is for, or what it costs to run.
+
+Needs: what it does in two sentences, a screenshot of the Now view and the recap, the five services it depends on and roughly what each costs, the deploy path end to end, and an honest statement of what is not built.
+
+`.env.example` becomes the contract and should be treated as documentation rather than a checklist.
+
+@@ISSUE | Document the Google OAuth setup and the seven-day refresh token trap
+state: todo
+milestone: Open source release
+labels: calendar, docs
+priority: 2
+---
+The single hardest onboarding step, and the one most likely to fail silently weeks later.
+
+Each self-hoster has to create their own Google Cloud project, enable the Calendar API, configure a consent screen, and register two redirect URIs — one for the calendar grant and one for Supabase Auth. Missing the second produces a `redirect_uri_mismatch` that points at the wrong thing.
+
+The trap worth its own callout: **Google expires refresh tokens after seven days while an OAuth app sits in Testing status.** This app depends on a long-lived refresh token, so calendar access dies every week and the failure looks like a bug in the app. On Workspace, set the consent screen to Internal. On a personal account, publish it and click through the unverified-app warning.
+
+@@ISSUE | Bootstrap a fresh instance in one command
+state: todo
+milestone: Open source release
+labels: ops
+priority: 2
+---
+`pnpm seed` covers the settings row and a workspace, but assumes you already know what those are and in what order they matter.
+
+A fresh instance needs: the settings row, at least one Linear workspace with a verified key, the calendar grant, and the VAPID pair if the nudge is wanted. Today that is four separate things learned from prose.
+
+Should be one command that asks for what it needs, verifies each credential as it goes rather than at 07:00 the next morning, and prints what is still missing.
+
+@@ISSUE | First-run state that teaches rather than reports
+state: todo
+milestone: Open source release
+labels: ui
+priority: 2
+---
+The empty states exist and are designed, but they were written for someone who already knew what the app was going to do. "Add a Linear workspace with a personal API key" assumes you know why.
+
+A first run against an empty database should show what is connected, what is not, and what each unconnected thing will buy you — calendar fit stays neutral without a calendar, no brief arrives without Resend. The setup page already holds all of that state; it just does not present it as a path.
+
+@@ISSUE | Choose a licence
+state: todo
+milestone: Open source release
+labels: chore, docs
+priority: 2
+---
+No licence file, which legally means all rights reserved and nobody may use it.
+
+Worth being deliberate given the goal is goodwill: a permissive licence (MIT, Apache 2.0) invites forks and commercial use, which is probably the point. Apache adds an explicit patent grant. Something copyleft would work against the stated aim.
+
+@@ISSUE | Audit what reaches the client bundle before publishing
+state: todo
+milestone: Open source release
+labels: auth, ops
+priority: 2
+---
+`NEXT_PUBLIC_*` variables are public by design and that is fine. What matters is proving nothing else joins them.
+
+Specifically: the service role key, the Anthropic key, the Resend key, any Linear key, the encryption key and the tick secret must never appear in a built client chunk. The service role key is the one that would be catastrophic, since it bypasses row level security entirely.
+
+Worth a grep over `.next/static` after a production build, and worth keeping as a check that runs before a release rather than once.
+
+@@ISSUE | Replace the personal sample data in the preview route
+state: todo
+milestone: Open source release
+labels: ui, chore
+priority: 3
+---
+`/preview` renders fixtures naming a real colleague and real ventures, because realistic sample data reads better than placeholder text.
+
+For a public repo those need to become invented but still realistic — the reason the fixtures are not "Lorem ipsum" in the first place is that generic sample data makes a design look worse than it is.
+
+@@ISSUE | Decide what docs/spec.md becomes
+state: todo
+milestone: Open source release
+labels: docs
+priority: 3
+---
+The spec is written about one person by name, in the second person, describing their ventures and their working day. It is the origin document and it is genuinely good at explaining why each decision was made.
+
+Either it stays as a historical artifact with a note at the top saying so, or it is rewritten as product documentation and loses the reasoning that makes it worth reading. The first is probably right, but it should be a decision rather than an oversight.
+
+@@UPDATE | 2026-09-18
+health: onTrack
+---
+The Linear restructure paid off, two emails turned out never to have sent, and the project found its distribution shape.
+
+## The ranking is doing real work now
+
+Adding target dates, assignments and milestones in Linear moved every number that matters:
+
+| | Before | After |
+| --- | --- | --- |
+| Issues assigned | 7 | 42 |
+| Projects with a target | 0 of 4 | 7 of 8 |
+| Candidates in a targeted project | 0 | 42 |
+| Spread, first to last | 0.138 | 0.319 |
+| Tied for first | 4 | 2 |
+
+Goal leverage now contributes to every candidate instead of being renormalised away every morning.
+
+The remaining ties have a different cause, and `linear:check` was still blaming the old one. It had a hardcoded line telling you to add target dates, which is advice that had just been acted on. It now derives the diagnosis from signal coverage and correctly reports the real gap: **only 7 of 42 issues carry an estimate**, so scope share falls back to neutral for the rest, and two issues in the same project with the same priority then score identically.
+
+## Both emails were failing silently
+
+Closing the day surfaced a Resend error that scrolled past too quickly to read. Recovering it found that the brief had never sent either: `onboarding@resend.dev` only delivers to the Resend account owner's address, and the brief was addressed elsewhere. The tick released its claim on failure, which is correct behaviour and also why nothing looked broken.
+
+Tracing every send call settled a larger question. All four pass `settings.email`, and guest links are web pages rather than email, so **this app has exactly one recipient**. Resend domain verification is therefore not a prod blocker at all; it is a deliverability question about a shared sender.
+
+`pnpm recap:resend` now retries a delivery that failed, so a closed day no longer strands its recap.
+
+## The recap page was unreadable at real volume
+
+Thirty-six closed issues rendered as one flat list with nothing marking where an item ended. Rebuilt around grouping by project, each group holding its own overflow behind a count, with the headline figures given real weight and the targets section no longer reserving half the layout to say "none".
+
+A closed day can also be reopened now. Closing is a judgement rather than a fact about the world, so it needed to be reversible.
+
+## Distribution decided
+
+This ships as a **self-host template, given away free**, not as a hosted service. That resolves rather than defers several questions: the singleton schema is correct for one instance per person, bring-your-own-keys is right for every service because there is no operator in the middle, and guest links get much safer because a projection bug stays a personal embarrassment.
+
+The new milestone covers what that makes urgent, starting with the fact that tracked files and git history currently carry a personal email, an organisation slug and a colleague's name.
