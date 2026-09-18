@@ -8,9 +8,9 @@ const done = { type: "completed" };
 function node(over: Partial<LinearIssueNode> = {}): LinearIssueNode {
   return {
     id: "lin_1",
-    identifier: "MEN-1",
+    identifier: "MER-1",
     title: "Ship pricing page",
-    url: "https://linear.app/x/issue/MEN-1",
+    url: "https://linear.app/x/issue/MER-1",
     priority: 2,
     estimate: 3,
     dueDate: "2026-09-20",
@@ -63,7 +63,7 @@ describe("toIssueRow", () => {
   it("resolves the project to our own id", () => {
     const row = toIssueRow(node(), "ws1", new Map([["lin_p1", "our_p1"]]));
     expect(row.project_id).toBe("our_p1");
-    expect(row.identifier).toBe("MEN-1");
+    expect(row.identifier).toBe("MER-1");
   });
 
   it("leaves the project null when the issue has none or it is unsynced", () => {

@@ -14,7 +14,7 @@ const TODAY = "2026-09-16";
 function issue(over: Partial<CandidateIssue> = {}): CandidateIssue {
   return {
     id: over.id ?? "i1",
-    identifier: over.identifier ?? "MEN-1",
+    identifier: over.identifier ?? "MER-1",
     title: "Do the thing",
     workspaceId: "w1",
     ventureName: "Meridian",
@@ -121,7 +121,7 @@ describe("momentum", () => {
 describe("scoreAll", () => {
   const targeted = (n: number): Candidate[] =>
     Array.from({ length: n }, (_, i) => ({
-      issue: issue({ id: `t${i}`, identifier: `MEN-${i}` }),
+      issue: issue({ id: `t${i}`, identifier: `MER-${i}` }),
       project: project({ id: `p${i}` }),
     }));
 
@@ -195,22 +195,22 @@ describe("scoreAll", () => {
 
   it("breaks ties deterministically so the same inputs give the same brief", () => {
     const tied: Candidate[] = [
-      { issue: issue({ id: "b", identifier: "MEN-9" }), project: null },
-      { issue: issue({ id: "a", identifier: "MEN-2" }), project: null },
+      { issue: issue({ id: "b", identifier: "MER-9" }), project: null },
+      { issue: issue({ id: "a", identifier: "MER-2" }), project: null },
     ];
     expect(scoreAll(tied, ctx()).ranked.map((r) => r.candidate.issue.identifier)).toEqual([
-      "MEN-2",
-      "MEN-9",
+      "MER-2",
+      "MER-9",
     ]);
   });
 
   it("ranks an overdue, unblocking, in-progress issue above a quiet one", () => {
     const hot: Candidate = {
-      issue: issue({ id: "hot", identifier: "MEN-100", priority: 1, dueDate: "2026-09-01", blocksCount: 4, stateType: "started", estimate: 2 }),
+      issue: issue({ id: "hot", identifier: "MER-100", priority: 1, dueDate: "2026-09-01", blocksCount: 4, stateType: "started", estimate: 2 }),
       project: project(),
     };
     const quiet: Candidate = {
-      issue: issue({ id: "quiet", identifier: "MEN-101", priority: 4, estimate: 2 }),
+      issue: issue({ id: "quiet", identifier: "MER-101", priority: 4, estimate: 2 }),
       project: project({ targetDate: "2027-06-01" }),
     };
     const result = scoreAll([quiet, hot], ctx());

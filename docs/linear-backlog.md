@@ -838,3 +838,102 @@ A closed day can also be reopened now. Closing is a judgement rather than a fact
 This ships as a **self-host template, given away free**, not as a hosted service. That resolves rather than defers several questions: the singleton schema is correct for one instance per person, bring-your-own-keys is right for every service because there is no operator in the middle, and guest links get much safer because a projection bug stays a personal embarrassment.
 
 The new milestone covers what that makes urgent, starting with the fact that tracked files and git history currently carry a personal email, an organisation slug and a colleague's name.
+
+@@MILESTONE | Reduction
+---
+Removing the scheduler, the calendar, browser push and all outbound email, after a week of real use produced a sharper product than the spec did.
+
+Two rules came out of it. Do not rebuild systems the user already has: meetings live in a calendar with reminders attached, so repeating them on a dashboard is noise, and an email telling you to open an app is a notification with extra steps. Do not supply discipline the user is meant to bring: nudges can be ignored anyway, so they buy nothing and cost a whole subsystem, and suggesting when to work was the same overreach one layer down.
+
+Several issues in earlier milestones describe work that was built, shipped, and then deliberately deleted. They are left closed rather than reworded, because "we built this and then removed it for these reasons" is more useful than a backlog that pretends it never happened.
+
+@@ISSUE | Remove the scheduler, calendar, push and outbound email
+state: done
+milestone: Reduction
+labels: backend, ops
+priority: 1
+---
+Gone: /api/tick and its four steps, the pg_cron migration, web push with VAPID and the service worker, Resend and both email templates, Google Calendar entirely, the backup task, the suggested focus window, and every `*_sent_at` column — those existed only so a cron could not double-send.
+
+Calendar fit's 10% was redistributed proportionally across the remaining four factors rather than reassigned, so the relative ordering the original weighting reasoned about survives exactly.
+
+The knock-on that matters most: self-hosting got far easier. No VAPID, no pg_cron, no Vault secrets, no Resend, and no Calendar consent screen — which removes the seven-day refresh-token trap that was the worst step in the entire setup.
+
+@@ISSUE | Post the recap to Linear as a project update
+state: done
+milestone: Reduction
+labels: linear, backend
+priority: 1
+---
+Closing the day now posts one update per project that had work closed in it, so the day's outcome reaches collaborators where they already are instead of dying in an inbox.
+
+Verified against the live schema before anything depended on it. `health` is deliberately omitted: closing a few issues is not evidence a project is on track, and claiming it would be the app asserting something it cannot know.
+
+This is most of what the guest-link collaborator view was for, at a fraction of the work and with no unauthenticated pages holding private titles.
+
+@@ISSUE | One needle mover plus three, each actionable
+state: done
+milestone: Reduction
+labels: ui, scoring
+priority: 2
+---
+Finishing the needle mover used to fall off a cliff: the card said nothing else was asked of you and the drawer underneath held bare titles with nothing to press, which sent you back to Linear to re-decide.
+
+Deliberately not a queue — the day still has one needle mover and finishing it does not promote the next thing, because an auto-advancing queue rebuilds the ranked task list the one-per-day constraint exists to replace. What changed is that the three underneath carry a reason from Claude, can be started and completed in place, and reflect their own state.
+
+The backup task went with it. With three ranked tasks underneath, a blocked needle mover is answered by doing the next one.
+
+@@ISSUE | Share today's task as an image
+state: done
+milestone: Reduction
+labels: ui, sharing
+priority: 3
+---
+A purpose-built card copied to the clipboard, not a capture of the Now view.
+
+A literal screenshot carries the app's chrome, which means nothing to the recipient, and carries the other three tasks if the list is open — which can name ventures a recipient was never meant to see. Colours are literals rather than tokens and the theme is fixed to light, because the recipient sees a PNG and it should look the same to everyone.
+
+Falls back to a download when the clipboard refuses, which Safari does whenever the write leaves the original gesture.
+
+@@ISSUE | Close the issues describing removed features
+state: todo
+milestone: Reduction
+labels: chore
+priority: 3
+---
+Several closed issues in Phase 1 and Phase 2 describe subsystems that no longer exist: the midday nudge, the close-day reminder, the Google Calendar OAuth grant, the morning brief email, and the pg_cron schedule.
+
+They are accurate history — that work was genuinely done — so the question is only whether the backlog should say so. Leaving them closed and unedited is the honest option; the Reduction milestone explains what happened to them.
+
+The "Deploy and prove" milestone is the one that actually needs editing, since it still lists proving the nudge and registering pg_cron as outstanding work that can never be done.
+
+@@UPDATE | 2026-09-19
+health: onTrack
+---
+A week of use removed about a third of the app, and the remaining third got sharper.
+
+## What went
+
+The scheduler, Google Calendar, browser push and every outbound email. Two rules drove it.
+
+**Do not rebuild systems the user already has.** Meetings live in a calendar with reminders attached, so repeating them on a dashboard is noise. The same test killed the morning brief: an email telling you to open an app is a notification with extra steps.
+
+**Do not supply discipline the user is meant to bring.** Nudges can be ignored anyway, so they buy nothing and cost a whole subsystem. Suggesting a focus window was the same overreach one layer down — deciding when someone should work was never the app's call. That is why the calendar went and not merely the notifications.
+
+## What replaced it
+
+Closing the day posts the recap to Linear as a project update, one per project with work closed in it. That reaches collaborators where they already are, and it quietly does most of what the guest-link collaborator view was designed for, without any unauthenticated pages holding private titles.
+
+The day is now one needle mover plus three ranked tasks, each carrying a reason and startable in place. The backup task is gone: with three underneath, a blocked needle mover is answered by doing the next one.
+
+Sharing is a purpose-built card copied to the clipboard rather than a screenshot, because a literal capture would carry the other three tasks and the app's chrome.
+
+## What it cost and what it bought
+
+Eight routes became seven. Roughly a third of the codebase went, along with two entire external services and the hardest piece of onboarding — the Google Calendar consent screen and its seven-day refresh-token expiry.
+
+The ranking itself was untouched, except that calendar fit's 10% was redistributed proportionally so the original relative ordering survives.
+
+## Next
+
+The repository is being prepared to go public as a self-host template. Personal data is out of the working tree; the git history is the remaining piece. After that, a first deploy.

@@ -9,7 +9,7 @@ function scored(over: Partial<ScoredCandidate["candidate"]["issue"]> = {}, proje
     candidate: {
       issue: {
         id: "i1",
-        identifier: "MEN-14",
+        identifier: "MER-14",
         title: "Ship the pricing page",
         workspaceId: "w1",
         ventureName: "Meridian",

@@ -36,7 +36,7 @@ async function Preview({
     date: "2026-09-16",
     active: {
       id: "nm",
-      identifier: "MEN-214",
+      identifier: "MER-214",
       title: "Ship the pricing page",
       url: "https://linear.app",
       ventureName: "Meridian",
@@ -56,7 +56,7 @@ async function Preview({
     alsoToday: [
       {
         id: "a1",
-        identifier: "MEN-201",
+        identifier: "MER-201",
         title: "Reply to the Figma thread on onboarding copy",
         url: "#",
         ventureName: "Meridian",

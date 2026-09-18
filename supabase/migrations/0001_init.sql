@@ -61,7 +61,7 @@ create table issues (
   linear_issue_id   text        not null unique,
   workspace_id      uuid        not null references workspaces(id) on delete cascade,
   project_id        uuid        references projects(id) on delete set null,
-  identifier        text        not null,      -- e.g. MEN-214
+  identifier        text        not null,      -- e.g. MER-214
   title             text        not null,
   url               text,
   state             text        not null,

@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 /**
- * Claude answers in issue identifiers (MEN-14), not uuids — they're in the
+ * Claude answers in issue identifiers (MER-14), not uuids — they're in the
  * prompt already, they're checkable by eye in a log, and a hallucinated
  * identifier is obvious where a hallucinated uuid is not.
  */
 export const PickSchema = z.object({
-  needle_mover: z.string().describe("Identifier of the single highest-impact issue, e.g. MEN-14"),
+  needle_mover: z.string().describe("Identifier of the single highest-impact issue, e.g. MER-14"),
   reason: z
     .string()
     .describe("One or two sentences on why this outranked everything else, naming the project target it advances"),

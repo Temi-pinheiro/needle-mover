@@ -29,8 +29,8 @@ function scored(identifier: string, venture: string, over: { blocked?: boolean; 
 }
 
 const shortlist = [
-  scored("MEN-1", "Meridian", { total: 0.9 }),
-  scored("MEN-2", "Meridian", { total: 0.8 }),
+  scored("MER-1", "Meridian", { total: 0.9 }),
+  scored("MER-2", "Meridian", { total: 0.8 }),
   scored("ACM-1", "Acme", { total: 0.7 }),
   scored("ACM-2", "Acme", { total: 0.6 }),
   scored("ZED-1", "Zed", { total: 0.5 }),
@@ -42,7 +42,7 @@ const also = (...identifiers: string[]) =>
   identifiers.map((identifier) => ({ identifier, reason: "worth a look" }));
 
 const pick = (over: Partial<Pick> = {}): Pick => ({
-  needle_mover: "MEN-1",
+  needle_mover: "MER-1",
   reason: "It is the only thing that moves the launch target this week.",
   first_step: "Open the pricing doc and list three tiers.",
   also_today: [],
@@ -52,9 +52,9 @@ const pick = (over: Partial<Pick> = {}): Pick => ({
 
 describe("resolvePick", () => {
   it("resolves a clean pick with no repairs", () => {
-    const r = resolvePick(pick({ also_today: also("MEN-2", "ACM-2") }), shortlist);
-    expect(r.needleMover.candidate.issue.identifier).toBe("MEN-1");
-    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MEN-2", "ACM-2"]);
+    const r = resolvePick(pick({ also_today: also("MER-2", "ACM-2") }), shortlist);
+    expect(r.needleMover.candidate.issue.identifier).toBe("MER-1");
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MER-2", "ACM-2"]);
     expect(r.repairs).toEqual([]);
   });
 
@@ -68,20 +68,20 @@ describe("resolvePick", () => {
 
   it("drops also-today items that are unknown, duplicated or already chosen", () => {
     const r = resolvePick(
-      pick({ also_today: also("MEN-1", "ACM-1", "MEN-2", "MEN-2", "GHOST") }),
+      pick({ also_today: also("MER-1", "ACM-1", "MER-2", "MER-2", "GHOST") }),
       shortlist,
     );
     // ACM-1 survives now that there is no backup for it to collide with.
     expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual([
       "ACM-1",
-      "MEN-2",
+      "MER-2",
     ]);
     expect(r.repairs.join(" ")).toMatch(/unusable/);
   });
 
   it("allows exactly two ventures in also today", () => {
     const r = resolvePick(
-      pick({ needle_mover: "MEN-1", also_today: also("ACM-1", "ACM-2", "ZED-1") }),
+      pick({ needle_mover: "MER-1", also_today: also("ACM-1", "ACM-2", "ZED-1") }),
       shortlist,
     );
     expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["ACM-1", "ACM-2", "ZED-1"]);
@@ -92,7 +92,7 @@ describe("resolvePick", () => {
     const list = [...shortlist, scored("QRX-1", "Quorix", { total: 0.3 })];
     const r = resolvePick(
       pick({
-        needle_mover: "MEN-1",
+        needle_mover: "MER-1",
               also_today: also("ACM-1", "ZED-1", "QRX-1", "ACM-2"),
       }),
       list,
@@ -104,7 +104,7 @@ describe("resolvePick", () => {
   });
 
   it("enforces the three-item cap", () => {
-    const big = Array.from({ length: 8 }, (_, i) => scored(`MEN-${i + 10}`, "Meridian"));
+    const big = Array.from({ length: 8 }, (_, i) => scored(`MER-${i + 10}`, "Meridian"));
     const list = [shortlist[0], ...big];
     const r = resolvePick(
       pick({ also_today: also(...big.slice(1).map((b) => b.candidate.issue.identifier)) }),
@@ -128,13 +128,13 @@ describe("identifiers across separate Linear organisations", () => {
   const collided = [
     scored("ENG-1", "Meridian", { total: 0.9 }),
     scored("ENG-1", "Northbound", { total: 0.4 }),
-    scored("MEN-2", "Meridian", { total: 0.8 }),
+    scored("MER-2", "Meridian", { total: 0.8 }),
   ];
 
   it("leaves identifiers bare when nothing collides", () => {
     const { qualified, refOf } = shortlistRefs(shortlist);
     expect(qualified).toBe(false);
-    expect(refOf(shortlist[0])).toBe("MEN-1");
+    expect(refOf(shortlist[0])).toBe("MER-1");
   });
 
   it("qualifies every identifier once any of them collide", () => {
@@ -142,7 +142,7 @@ describe("identifiers across separate Linear organisations", () => {
     expect(qualified).toBe(true);
     expect(refOf(collided[0])).toBe("Meridian/ENG-1");
     // Qualification is all-or-nothing, so the prompt never mixes two forms.
-    expect(refOf(collided[2])).toBe("Meridian/MEN-2");
+    expect(refOf(collided[2])).toBe("Meridian/MER-2");
   });
 
   it("keeps both colliding entries reachable", () => {
