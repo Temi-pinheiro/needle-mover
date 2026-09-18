@@ -125,9 +125,9 @@ function ClosedPreview({ quiet }: { quiet: boolean }) {
     }));
 
   const closed: ClosedIssue[] = quiet
-    ? make("Guest links", "Northbound", "TEM", ["Collaborator link projection", "Revocation and expiry"])
+    ? make("Guest links", "Northbound", "NBD", ["Collaborator link projection", "Revocation and expiry"])
     : [
-        ...make("Needle Mover", "Northbound", "TEM", [
+        ...make("Needle Mover", "Northbound", "NBD", [
           "Qualify issue identifiers when two ventures produce the same one",
           "A venture is a Linear team, not a Linear organisation",
           "Operational scripts: migrations, env:check, seed, scope",
@@ -137,19 +137,19 @@ function ClosedPreview({ quiet }: { quiet: boolean }) {
           "Settings page",
           "Auth, Supabase Google sign-in restricted to one address",
         ]),
-        ...make("Guest links", "Northbound", "TEM", [
+        ...make("Guest links", "Northbound", "NBD", [
           "Collaborator link, one per venture",
           "Personal link for friends and family",
           "Private venture override",
         ]),
-        ...make("Sales funnel", "Halyard", "BUI", [
+        ...make("Sales funnel", "Halyard", "HLY", [
           "Walk the client through the funnel",
           "Finish the discovery deck",
           "Send the revised statement of work",
           "Confirm October workshop dates",
           "Draft the Q4 partner update",
         ]),
-        ...make("Bord", "Halyard", "BUI", ["Pricing page copy", "Onboarding email sequence"]),
+        ...make("Bord", "Halyard", "HLY", ["Pricing page copy", "Onboarding email sequence"]),
       ];
 
   return (
@@ -182,8 +182,8 @@ function ClosedPreview({ quiet }: { quiet: boolean }) {
             ]
       }
       tomorrow={{
-        identifier: "BUI-127",
-        title: "Work on the sales funnel and walk the client through it",
+        identifier: "HLY-127",
+        title: "Rebuild the sales funnel and walk the client through it",
         ventureName: "Halyard",
       }}
       tomorrowNote="The deck is done, so the walkthrough is the next thing standing between this and a signed scope."

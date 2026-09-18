@@ -6,8 +6,8 @@
  * sync's mark-and-sweep is the only thing standing between you and issues from
  * a team you just excluded.
  *
- *   pnpm scope --venture Northbound --team TEM
- *   pnpm scope --venture Halyard --team BUI
+ *   pnpm scope --venture Northbound --team NBD
+ *   pnpm scope --venture Halyard --team HLY
  *   pnpm scope --venture Halyard --whole-org
  *   pnpm scope --list
  */

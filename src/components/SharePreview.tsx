@@ -13,7 +13,7 @@ const SAMPLE = {
 
 const LONG = {
   ...SAMPLE,
-  title: "Work on the sales funnel and walk the client through the whole thing before Friday",
+  title: "Rebuild the sales funnel and walk the client through it before Friday",
   ventureName: "Halyard",
   projectName: "Sales funnel",
   projectTarget: "2026-09-30",
