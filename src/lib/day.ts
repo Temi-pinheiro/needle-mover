@@ -338,3 +338,53 @@ export async function closeDay(now: Date): Promise<CloseResult> {
 
   return { status: "closed", recapSent, note };
 }
+
+/**
+ * Reopening a closed day.
+ *
+ * Closing is a judgement ("I am done"), not a fact about the world, so it has
+ * to be reversible: closed by accident, closed early and then more happened,
+ * or closed to test something.
+ *
+ * What is kept and what is cleared follows one rule — keep what actually
+ * happened, clear what was derived from it:
+ *
+ *  - `day_events` are kept. Started, blocked and done are records of real
+ *    moments; reopening does not un-happen them.
+ *  - The recap narrative is cleared, because re-closing regenerates it and a
+ *    stale summary sitting beside a fresh one is exactly the two-copies-that-
+ *    disagree problem the day row exists to avoid.
+ *  - `recap_sent_at` is cleared so a corrected recap goes out on re-close. The
+ *    cost is a second email; the alternative is silently suppressing the right
+ *    one.
+ *  - The closing progress snapshot is deleted. It records where things stood
+ *    at close, and there is no longer a close.
+ */
+export async function reopenDay(date: string): Promise<{ reopened: boolean; note?: string }> {
+  const { data } = await db().from("days").select("*").eq("date", date).maybeSingle();
+  const day = data as Day | null;
+
+  if (!day) return { reopened: false, note: `There is no day row for ${date}.` };
+  if (day.status !== "closed") return { reopened: false, note: `${date} is already open.` };
+
+  await db()
+    .from("days")
+    .update({
+      status: "open",
+      closed_at: null,
+      recap_summary: null,
+      recap_tomorrow_note: null,
+      recap_tomorrow_id: null,
+      recap_sent_at: null,
+    })
+    .eq("id", day.id);
+
+  await db().from("progress_snapshots").delete().eq("date", date).eq("moment", "close");
+
+  return {
+    reopened: true,
+    note: day.recap_sent_at
+      ? "Reopened. The recap you already received is now out of date; closing again sends a corrected one."
+      : undefined,
+  };
+}

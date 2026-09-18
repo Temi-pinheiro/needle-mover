@@ -118,3 +118,18 @@ export async function closeToday(): Promise<ActionResult> {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };
   }
 }
+
+/** Reopens today after it has been closed. */
+export async function reopenToday(): Promise<ActionResult> {
+  const { getSettings, reopenDay } = await import("@/lib/day");
+  const { localDate } = await import("@/lib/time");
+
+  try {
+    const settings = await getSettings();
+    const result = await reopenDay(localDate(new Date(), settings.timezone));
+    revalidatePath("/");
+    return { ok: result.reopened, note: result.note };
+  } catch (err) {
+    return { ok: false, note: err instanceof Error ? err.message : String(err) };
+  }
+}

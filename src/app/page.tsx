@@ -85,6 +85,7 @@ export default async function Page() {
             : null
         }
         tomorrowNote={day.recap_tomorrow_note}
+        recapWasSent={Boolean(day.recap_sent_at)}
       />
     );
   }

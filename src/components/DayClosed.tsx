@@ -1,6 +1,7 @@
 import type { ClosedIssue, ProjectMovement } from "@/lib/recap";
 import { HeaderNav } from "./HeaderNav";
 import { ClosedList } from "./ClosedList";
+import { ReopenDay } from "./ReopenDay";
 
 /**
  * The day after it has been closed.
@@ -21,6 +22,7 @@ export function DayClosed({
   movements,
   tomorrow,
   tomorrowNote,
+  recapWasSent = false,
 }: {
   date: string;
   summary: string | null;
@@ -28,6 +30,7 @@ export function DayClosed({
   movements: ProjectMovement[];
   tomorrow: { identifier: string; title: string; ventureName: string } | null;
   tomorrowNote: string | null;
+  recapWasSent?: boolean;
 }) {
   const projects = new Set(closed.map((c) => `${c.ventureName}/${c.projectName ?? "none"}`)).size;
 
@@ -100,6 +103,13 @@ export function DayClosed({
           </div>
         </Block>
       )}
+
+      <div
+        className="enter mt-16 border-t border-line pt-6"
+        style={{ "--index": 6 } as React.CSSProperties}
+      >
+        <ReopenDay recapWasSent={recapWasSent} />
+      </div>
     </main>
   );
 }
