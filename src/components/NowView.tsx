@@ -5,6 +5,7 @@ import { blockTask, completeTask, startTask, type ActionResult } from "@/app/act
 import { ArrowUpRight, Check, Slash } from "./icons";
 import { AlsoToday, type AlsoTodayItem } from "./AlsoToday";
 import { CloseDay } from "./CloseDay";
+import { ShareButton } from "./ShareButton";
 import { HeaderNav } from "./HeaderNav";
 
 export type TaskCard = {
@@ -175,8 +176,15 @@ export function NowView(props: NowViewProps) {
 
           <AlsoToday dayId={dayId} items={alsoToday} openByDefault={done} />
 
-          <div className="mt-2 border-t border-line">
+          <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line">
             <CloseDay />
+            <ShareButton
+              ventureName={active.ventureName}
+              title={active.title}
+              projectName={active.projectName}
+              projectTarget={active.projectTarget}
+              date={props.date}
+            />
           </div>
         </section>
 

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { NowView, type NowViewProps } from "@/components/NowView";
 import { DayClosed } from "@/components/DayClosed";
+import { SharePreview } from "@/components/SharePreview";
 import type { ClosedIssue } from "@/lib/recap";
 
 /**
@@ -27,6 +28,8 @@ async function Preview({
   if (variant === "closed" || variant === "closed-quiet") {
     return <ClosedPreview quiet={variant === "closed-quiet"} />;
   }
+
+  if (variant === "share") return <SharePreview />;
 
   const base: NowViewProps = {
     dayId: "preview",
