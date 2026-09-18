@@ -19,11 +19,17 @@ type Probe =
   | { file: string; what: string; kind: "column"; table: string; column: string }
   | { file: string; what: string; kind: "backfill"; table: string; column: string }
   /** Applied when the column is GONE, for migrations that drop things. */
-  | { file: string; what: string; kind: "absent"; table: string; column: string };
+  | { file: string; what: string; kind: "absent"; table: string; column: string }
+  /**
+   * Undone by a later migration, so there is nothing left to probe for.
+   * Without this, a migration whose column was later dropped reports as
+   * pending and invites you to re-add something deliberately removed.
+   */
+  | { file: string; what: string; kind: "superseded"; by: string };
 
 const PROBES: Probe[] = [
   { file: "0001_init", what: "core schema", kind: "column", table: "settings", column: "email" },
-  { file: "0003_pause_briefs", what: "hold briefs until a date", kind: "column", table: "settings", column: "paused_until" },
+  { file: "0003_pause_briefs", what: "hold briefs until a date", kind: "superseded", by: "0008_drop_scheduler" },
   { file: "0004_recap_text", what: "recap shown in the app", kind: "column", table: "days", column: "recap_summary" },
   { file: "0005_webhook_secret", what: "per-venture webhook secrets", kind: "backfill", table: "workspaces", column: "webhook_secret" },
   { file: "0006_team_scoping", what: "venture scoped to a Linear team", kind: "column", table: "workspaces", column: "linear_team_id" },
@@ -45,6 +51,11 @@ async function main() {
   const pending: string[] = [];
 
   for (const probe of PROBES) {
+    if (probe.kind === "superseded") {
+      console.log(`  n/a      ${probe.file.padEnd(22)} ${probe.what} — undone by ${probe.by}`);
+      continue;
+    }
+
     const { data, error } = await db.from(probe.table).select(probe.column);
 
     let applied: boolean;
