@@ -13,24 +13,19 @@
     "keygen": "tsx scripts/keygen.ts",
     "db:types": "supabase gen types typescript --linked > src/lib/db/generated.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
-    "brief:preview": "tsx --env-file-if-exists=.env.local scripts/brief-preview.ts",
     "migrations": "tsx --env-file-if-exists=.env.local scripts/migration-status.ts",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/env-check.ts",
-    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts",
-    "recap:resend": "tsx --env-file-if-exists=.env.local scripts/recap-resend.ts"
+    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
     "@phosphor-icons/react": "^2.1.10",
-    "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "google-auth-library": "^11.1.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.28.1",
-    "web-push": "^3.6.7",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -38,7 +33,6 @@
     "@types/node": "^22.20.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",

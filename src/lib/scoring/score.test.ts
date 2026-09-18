@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  calendarFit,
   deadlinePressure,
   goalLeverage,
   momentum,
@@ -42,7 +41,6 @@ function project(over: Partial<CandidateProject> = {}): CandidateProject {
 
 const ctx = (over: Partial<ScoringContext> = {}): ScoringContext => ({
   today: TODAY,
-  largestFreeBlockHours: 3,
   carryOver: {},
   ...over,
 });
@@ -120,24 +118,6 @@ describe("momentum", () => {
   });
 });
 
-describe("calendarFit", () => {
-  it("is neutral when the calendar or the estimate is unknown", () => {
-    expect(calendarFit({ issue: issue({ estimate: 2 }), project: null }, ctx({ largestFreeBlockHours: null }))).toBe(0.5);
-    expect(calendarFit({ issue: issue({ estimate: null }), project: null }, ctx())).toBe(0.5);
-  });
-
-  it("saturates when the free block covers the estimate", () => {
-    // 1 point * 1.5 h/point = 1.5h needed, 3h free.
-    expect(calendarFit({ issue: issue({ estimate: 1 }), project: null }, ctx({ largestFreeBlockHours: 3 }))).toBe(1);
-  });
-
-  it("penalises an estimate that will not fit", () => {
-    const fit = calendarFit({ issue: issue({ estimate: 8 }), project: null }, ctx({ largestFreeBlockHours: 3 }));
-    expect(fit).toBeGreaterThan(0);
-    expect(fit).toBeLessThan(1);
-  });
-});
-
 describe("scoreAll", () => {
   const targeted = (n: number): Candidate[] =>
     Array.from({ length: n }, (_, i) => ({
@@ -197,9 +177,14 @@ describe("scoreAll", () => {
 
   it("preserves the relative order of the surviving weights when renormalising", () => {
     const { weights } = scoreAll(mix(0, 6), ctx());
+    expect(weights.goalLeverage).toBe(0);
     expect(weights.deadlinePressure).toBeGreaterThan(weights.unblocksOthers);
-    expect(weights.unblocksOthers).toBeCloseTo(weights.momentum);
-    expect(weights.momentum).toBeGreaterThan(weights.calendarFit);
+    expect(weights.unblocksOthers).toBeCloseTo(weights.momentum, 2);
+  });
+
+  it("keeps the four weights summing to one", () => {
+    const sum = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + b, 0);
+    expect(sum).toBeCloseTo(1);
   });
 
   it("caps the shortlist", () => {

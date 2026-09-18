@@ -1,15 +1,20 @@
 import type { FactorScores } from "./types";
 
 /**
- * Starting weights from the spec. These are meant to be tuned from the swap
- * log in Phase 5 — nothing else in the codebase should hardcode a weight.
+ * Weights, renormalised after calendar fit was removed.
+ *
+ * The spec's original five were 35/25/15/15/10. Dropping the calendar meant
+ * redistributing its 10% proportionally rather than picking new numbers, so
+ * the relative ordering the spec reasoned about is preserved exactly.
+ *
+ * Meant to be tuned from the swap log later — nothing else should hardcode a
+ * weight.
  */
 export const DEFAULT_WEIGHTS: FactorScores = {
-  goalLeverage: 0.35,
-  deadlinePressure: 0.25,
-  unblocksOthers: 0.15,
-  momentum: 0.15,
-  calendarFit: 0.1,
+  goalLeverage: 0.389,
+  deadlinePressure: 0.278,
+  unblocksOthers: 0.167,
+  momentum: 0.166,
 };
 
 /** Linear priority (0 none, 1 urgent … 4 low) mapped onto 0..1. */
@@ -35,20 +40,6 @@ export const MOMENTUM_PER_CARRYOVER_DAY = 0.2;
 
 /** After this many days unfinished, the brief asks TP to split or drop it. */
 export const CARRYOVER_SPLIT_THRESHOLD = 3;
-
-/**
- * Hours of real work per estimate point, for calendar fit.
- *
- * A single multiplier is right for Fibonacci: the scale is built so the number
- * already tracks relative effort, so 8 really is about four times 2. (It would
- * have been wrong for t-shirt sizes, where the numbers rise linearly while the
- * effort they stand for does not.)
- *
- * This is the one number here that cannot be derived — it depends on what one
- * point means to you in practice.
- */
-export const HOURS_PER_ESTIMATE_POINT = 1.5;
-
 /**
  * Goal leverage only counts when enough of the backlog sits in a targeted
  * project for the comparison to mean anything. If one issue out of seven has a

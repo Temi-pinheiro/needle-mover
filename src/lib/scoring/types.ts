@@ -40,8 +40,6 @@ export type Candidate = {
 export type ScoringContext = {
   /** Today's date in the user's timezone, as ISO yyyy-mm-dd. */
   today: string;
-  /** Largest free calendar block today, in hours. Null when calendar is unavailable. */
-  largestFreeBlockHours: number | null;
   /**
    * issueId -> consecutive days this issue has been an unfinished needle mover.
    * Drives both the momentum boost and the 3-day split prompt.
@@ -53,8 +51,7 @@ export type FactorName =
   | "goalLeverage"
   | "deadlinePressure"
   | "unblocksOthers"
-  | "momentum"
-  | "calendarFit";
+  | "momentum";
 
 /** Each factor resolves to 0..1 before weighting. */
 export type FactorScores = Record<FactorName, number>;

@@ -8,21 +8,8 @@
 export type Settings = {
   singleton: true;
   email: string;
-  brief_time: string;
-  close_cutoff_time: string;
   timezone: string;
-  weekdays_only: boolean;
-  paused_until: string | null;
   updated_at: string;
-};
-
-export type GoogleAccount = {
-  singleton: true;
-  email: string;
-  refresh_token: string;
-  primary_calendar_id: string;
-  timezone: string | null;
-  connected_at: string;
 };
 
 export type Workspace = {
@@ -77,21 +64,14 @@ export type Day = {
   date: string;
   timezone: string;
   needle_mover_id: string | null;
-  backup_id: string | null;
   also_today_ids: string[];
   also_today_reasons: Record<string, string>;
   reason: string | null;
   first_step: string | null;
   plain_focus: string | null;
-  focus_window_start: string | null;
-  focus_window_end: string | null;
   degraded_scoring: boolean;
   status: DayStatus;
   closed_at: string | null;
-  brief_sent_at: string | null;
-  nudge_sent_at: string | null;
-  reminder_sent_at: string | null;
-  recap_sent_at: string | null;
   recap_summary: string | null;
   recap_tomorrow_note: string | null;
   recap_tomorrow_id: string | null;

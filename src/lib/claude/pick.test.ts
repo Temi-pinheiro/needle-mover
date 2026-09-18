@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildPickPrompt, renderShortlist } from "./pick";
 import type { ScoredCandidate, ScoringResult } from "@/lib/scoring/types";
 
-const zero = { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0, calendarFit: 0 };
+const zero = { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0 };
 
 function scored(over: Partial<ScoredCandidate["candidate"]["issue"]> = {}, project = true, carryOverDays = 0): ScoredCandidate {
   return {
@@ -65,19 +65,7 @@ describe("renderShortlist", () => {
 });
 
 describe("buildPickPrompt", () => {
-  const base = { today: "2026-09-16", timezone: "Africa/Lagos", freeBlocks: [], scoring: scoring() };
-
-  it("tells Claude not to let a missing calendar decide the pick", () => {
-    expect(buildPickPrompt(base)).toContain("Do not let this decide the pick");
-  });
-
-  it("lists free blocks when the calendar is available", () => {
-    const prompt = buildPickPrompt({
-      ...base,
-      freeBlocks: [{ start: "09:00", end: "12:00", hours: 3 }],
-    });
-    expect(prompt).toContain("09:00–12:00 (3.0h)");
-  });
+  const base = { today: "2026-09-16", timezone: "Africa/Lagos", scoring: scoring() };
 
   it("warns when goal leverage was renormalised away", () => {
     const prompt = buildPickPrompt({ ...base, scoring: scoring({ degraded: true, targetedCount: 2 }) });

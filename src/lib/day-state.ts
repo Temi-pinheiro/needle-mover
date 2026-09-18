@@ -9,10 +9,8 @@ import type { Day, DayEvent } from "@/lib/db/types";
  */
 
 export type NowState = {
-  /** The issue the card should show — the backup once the needle mover is blocked. */
+  /** The issue the card shows. Always the needle mover; there is no backup. */
   activeIssueId: string | null;
-  /** True when the card is showing the backup rather than the needle mover. */
-  showingBackup: boolean;
   needleMoverBlocked: boolean;
   blockReason: string | null;
   /** The active issue has been started in Linear. */
@@ -59,19 +57,17 @@ export function nowState(day: Day, events: DayEvent[]): NowState {
   const blocked = forIssue(needleMover, "blocked");
   const needleMoverDone = forIssue(needleMover, "done").length > 0;
 
-  // A blocked needle mover hands the day to the backup — unless it was
-  // finished anyway, in which case the block is history.
+  // Blocking no longer hands the day to a backup: with three ranked tasks
+  // underneath, a blocked needle mover is answered by doing the next one. The
+  // block is still recorded, because the recap reports it.
   const needleMoverBlocked = blocked.length > 0 && !needleMoverDone;
-  const showingBackup = needleMoverBlocked && Boolean(day.backup_id);
-  const activeIssueId = showingBackup ? day.backup_id : needleMover;
 
   return {
-    activeIssueId,
-    showingBackup,
+    activeIssueId: needleMover,
     needleMoverBlocked,
     blockReason: blocked.at(-1)?.note ?? null,
-    started: forIssue(activeIssueId, "started").length > 0,
-    done: forIssue(activeIssueId, "done").length > 0,
+    started: forIssue(needleMover, "started").length > 0,
+    done: forIssue(needleMover, "done").length > 0,
     needleMoverDone,
   };
 }

@@ -112,7 +112,11 @@ export async function closeToday(): Promise<ActionResult> {
     }
     return {
       ok: true,
-      note: result.recapSent ? undefined : result.note,
+      note:
+        result.note ??
+        (result.postedUpdates > 0
+          ? `Day closed. ${result.postedUpdates} project update(s) posted to Linear.`
+          : "Day closed."),
     };
   } catch (err) {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };

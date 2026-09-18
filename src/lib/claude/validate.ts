@@ -10,7 +10,7 @@ import type { Pick } from "./schema";
  * loop: a brief that is slightly less ideal beats a brief that doesn't arrive.
  */
 
-export const ALSO_TODAY_MAX_ITEMS = 5;
+export const ALSO_TODAY_MAX_ITEMS = 3;
 export const ALSO_TODAY_MAX_VENTURES = 2;
 
 /** An "also today" item and why it earned a place. */
@@ -18,7 +18,6 @@ export type AlsoTodayItem = { candidate: ScoredCandidate; reason: string };
 
 export type ResolvedPick = {
   needleMover: ScoredCandidate;
-  backup: ScoredCandidate | null;
   alsoToday: AlsoTodayItem[];
   reason: string;
   firstStep: string;
@@ -94,29 +93,9 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
     );
   }
 
-  // Backup: must exist, differ from the needle mover, and be startable on its
-  // own. Falling back to the next-highest-scored issue keeps the Blocked button
-  // useful rather than empty.
-  let backup = lookup(pick.backup);
-  if (backup && backup.candidate.issue.id === needleMover.candidate.issue.id) {
-    repairs.push("backup matched the needle mover");
-    backup = null;
-  }
-  if (!backup && pick.backup) {
-    repairs.push(`backup ${pick.backup} was not on the shortlist`);
-  }
-  if (!backup) {
-    backup =
-      shortlist.find(
-        (s) => s.candidate.issue.id !== needleMover.candidate.issue.id && !s.candidate.issue.isBlocked,
-      ) ?? null;
-  }
-
   // Also today: drop unknowns and duplicates, then apply the caps in order so
   // the highest-scored ventures survive.
-  const excluded = new Set(
-    [needleMover, backup].filter(Boolean).map((s) => s!.candidate.issue.id),
-  );
+  const excluded = new Set([needleMover.candidate.issue.id]);
 
   const seen = new Set<string>();
   const candidates = pick.also_today
@@ -160,7 +139,6 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
 
   return {
     needleMover,
-    backup,
     alsoToday,
     reason: pick.reason.trim(),
     firstStep,

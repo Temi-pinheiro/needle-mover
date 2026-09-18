@@ -247,3 +247,21 @@ export function completedSinceFilter(assigneeId: string, since: string, teamId?:
     ...(teamId ? { team: { id: { eq: teamId } } } : {}),
   };
 }
+
+/**
+ * Posts a project update. Verified against the live schema: `projectId` is the
+ * only required field, `health` is optional and deliberately omitted — closing
+ * a few issues is not evidence a project is on track, and claiming it would be
+ * the app asserting something it cannot know.
+ */
+export const PROJECT_UPDATE_CREATE = /* GraphQL */ `
+  mutation PostProjectUpdate($projectId: String!, $body: String!) {
+    projectUpdateCreate(input: { projectId: $projectId, body: $body }) {
+      success
+      projectUpdate {
+        id
+        url
+      }
+    }
+  }
+`;

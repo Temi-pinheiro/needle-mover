@@ -2,35 +2,35 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { anthropic, MODELS } from "./client";
 import { PickSchema, type Pick } from "./schema";
 import { resolvePick, shortlistRefs, type ResolvedPick } from "./validate";
-import { ALSO_TODAY_MAX_ITEMS, ALSO_TODAY_MAX_VENTURES } from "./validate";
+import { ALSO_TODAY_MAX_VENTURES } from "./validate";
 import { CARRYOVER_SPLIT_THRESHOLD } from "@/lib/scoring/weights";
 import type { ScoredCandidate, ScoringResult } from "@/lib/scoring/types";
-
-export type FreeBlock = { start: string; end: string; hours: number };
 
 export type PickContext = {
   /** Today's local date, yyyy-mm-dd. */
   today: string;
   timezone: string;
-  freeBlocks: FreeBlock[];
   scoring: ScoringResult;
 };
 
-const SYSTEM = `You choose one needle mover per day for a founder running several ventures at once.
+const SYSTEM = `You choose the day's work for a founder running several ventures at once.
 
-A needle mover is the single task that moves a venture furthest toward a stated project target. You are given a pre-scored shortlist; the scoring has already weighed goal leverage, deadline pressure, unblocking, momentum and calendar fit. Your job is judgement the score cannot make: which of these genuinely changes the week, and how to make it easy to start.
+You pick one needle mover and three other tasks. The needle mover is the single task that moves a venture furthest toward a stated project target; the other three are what is worth doing after it, in order.
+
+You are given a pre-scored shortlist. The scoring has already weighed goal leverage, deadline pressure, unblocking and momentum. Your job is the judgement the score cannot make: which of these genuinely changes the week, and how to make it easy to start.
 
 Rules, all of which are hard requirements:
 
-- Pick the needle mover and the backup from the shortlist only, by identifier.
-- The backup must stay startable even if the needle mover turns out to be blocked, so do not pick a backup that depends on the same work, the same person or the same decision. It may come from any venture.
+- Pick everything from the shortlist only, by identifier.
 - The first step is one physical action that takes under 10 minutes and starts with a verb. It must be something you could do without deciding anything else first. Good: "Open the Meridian pricing doc and list three tiers." Bad: "Think about pricing", "Start the pricing work".
-- The reason is one or two sentences naming the project target this advances and why it outranked the runners-up. Do not restate the score.
-- "Also today" is at most ${ALSO_TODAY_MAX_ITEMS} items drawn from at most ${ALSO_TODAY_MAX_VENTURES} ventures, excluding the needle mover and the backup. Fewer is better; return an empty list if nothing else is worth the attention.
-- Each "also today" item carries one short clause saying why it earned a place, written to be read after the needle mover is already finished. Say what it unblocks or what it is running out of time against. "Unblocks the webhook and the first real brief" is useful; "important task" is not.
+- The reason is one or two sentences naming the project target the needle mover advances and why it outranked the runners-up. Do not restate the score.
+- The three other tasks are drawn from at most ${ALSO_TODAY_MAX_VENTURES} ventures and exclude the needle mover. Return fewer than three if fewer are genuinely worth the day.
+- Each of those three carries one short clause saying why it earned a place, written to be read once the needle mover is already finished. Say what it unblocks or what it is running out of time against. "Unblocks the webhook and the first real brief" is useful; "important task" is not.
 - The plain focus line describes the needle mover to a friend: no venture names, client names, product names or jargon. One short sentence.
 
-Prefer the task that unblocks a target over the task that is merely urgent. A high score with a distant target is worth less than a moderate score on a target that lands this month.`;
+Prefer the task that unblocks a target over the task that is merely urgent. A high score with a distant target is worth less than a moderate score on a target that lands this month.
+
+Do not suggest when to do any of it. Say what matters and why; the day is theirs to arrange.`;
 
 /** Renders the shortlist for the prompt: scores plus the facts behind them. */
 export function renderShortlist(shortlist: ScoredCandidate[]): string {
@@ -75,25 +75,14 @@ export function renderShortlist(shortlist: ScoredCandidate[]): string {
     .join("\n\n");
 }
 
-function renderCalendar(ctx: PickContext): string {
-  if (ctx.freeBlocks.length === 0) {
-    return "Calendar: no free blocks found today (or the calendar was unreachable). Do not let this decide the pick.";
-  }
-  const blocks = ctx.freeBlocks
-    .map((b) => `  ${b.start}–${b.end} (${b.hours.toFixed(1)}h)`)
-    .join("\n");
-  return `Free calendar blocks today:\n${blocks}`;
-}
-
 export function buildPickPrompt(ctx: PickContext): string {
   const parts = [
     `Today is ${ctx.today} (${ctx.timezone}).`,
-    renderCalendar(ctx),
     ctx.scoring.degraded
       ? `Note: only ${ctx.scoring.targetedCount} candidate(s) belong to a project with a target date, so goal leverage was excluded from the score. Lean harder on your own judgement about which project actually matters.`
       : null,
     `Shortlist (highest score first):\n\n${renderShortlist(ctx.scoring.shortlist)}`,
-    "Choose the needle mover.",
+    "Choose the needle mover and the three that follow it.",
   ].filter(Boolean);
 
   return parts.join("\n\n");

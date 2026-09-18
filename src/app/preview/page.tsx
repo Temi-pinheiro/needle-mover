@@ -41,14 +41,12 @@ async function Preview({
       projectTarget: "2026-10-01",
       projectProgress: 0.42,
     },
-    showingBackup: false,
     blockReason: null,
     started: false,
     done: false,
     firstStep: "Open the Meridian pricing doc and list three tiers.",
     reason:
       "It is the only open task that moves the Launch pricing target, which lands in two weeks and is still under half done. Everything above it on urgency was either blocked or belongs to a project with no date.",
-    focusWindow: "Focus window 09:00–12:00",
     carryOverDays: 0,
     needsSplit: false,
     degraded: false,
@@ -91,7 +89,6 @@ async function Preview({
     started: { started: true },
     done: { started: true, done: true },
     blocked: {
-      showingBackup: true,
       blockReason: "Waiting on the contract from legal",
       active: {
         id: "bk",
@@ -120,6 +117,8 @@ function ClosedPreview({ quiet }: { quiet: boolean }) {
       url: "#",
       ventureName: venture,
       projectName: project,
+      linearProjectId: `lin_${project.toLowerCase().replace(/\s+/g, "_")}`,
+      workspaceId: "preview",
     }));
 
   const closed: ClosedIssue[] = quiet

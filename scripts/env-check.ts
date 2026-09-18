@@ -7,16 +7,14 @@
  */
 const KEYS = [
   "ALLOWED_EMAIL",
-  "BRIEF_FROM_EMAIL",
   "NEXT_PUBLIC_APP_URL",
-  "VAPID_SUBJECT",
   "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
   "ENCRYPTION_KEY",
-  "TICK_SECRET",
   "ANTHROPIC_API_KEY",
   "GOOGLE_CLIENT_ID",
-  "RESEND_API_KEY",
-  "NEXT_PUBLIC_VAPID_PUBLIC_KEY",
+  "GOOGLE_CLIENT_SECRET",
 ];
 
 console.log("\nHow the runtime parses .env.local\n");
@@ -30,20 +28,11 @@ for (const key of KEYS) {
     continue;
   }
 
-  // BRIEF_FROM_EMAIL is legitimately `Display Name <address@domain>`, so the
-  // space and angle brackets that are a problem everywhere else are correct here.
-  const isFromHeader = key === "BRIEF_FROM_EMAIL";
-
   const issues: string[] = [];
   if (raw.includes("#")) issues.push("contains # — probably a trailing comment");
   if (raw !== raw.trim()) issues.push("has surrounding whitespace");
-  if (!isFromHeader && /\s/.test(raw.trim())) issues.push("contains a space");
-  if (!isFromHeader && (raw.includes("<") || raw.includes(">"))) {
-    issues.push("looks like an unfilled placeholder");
-  }
-  if (isFromHeader && !/^[^<>]*<[^<>@\s]+@[^<>@\s]+>$|^[^<>@\s]+@[^<>@\s]+$/.test(raw.trim())) {
-    issues.push('should be `Name <address@domain>` or a bare address');
-  }
+  if (/\s/.test(raw.trim())) issues.push("contains a space");
+  if (raw.includes("<") || raw.includes(">")) issues.push("looks like an unfilled placeholder");
 
   if (issues.length > 0) problems++;
   console.log(

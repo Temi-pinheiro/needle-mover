@@ -7,9 +7,6 @@ import { z } from "zod";
  */
 export const PickSchema = z.object({
   needle_mover: z.string().describe("Identifier of the single highest-impact issue, e.g. MEN-14"),
-  backup: z
-    .string()
-    .describe("Identifier of a task that stays startable even if the needle mover turns out to be blocked"),
   reason: z
     .string()
     .describe("One or two sentences on why this outranked everything else, naming the project target it advances"),
@@ -25,7 +22,7 @@ export const PickSchema = z.object({
           .describe("One short clause on why this is worth touching today. No full stop needed."),
       }),
     )
-    .describe("Up to 5 other items worth touching today, drawn from at most 2 ventures"),
+    .describe("The three other tasks worth doing today, best first, drawn from at most 2 ventures"),
   plain_focus: z
     .string()
     .describe(

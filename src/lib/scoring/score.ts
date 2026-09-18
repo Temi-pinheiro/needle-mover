@@ -2,7 +2,6 @@ import {
   CARRYOVER_SPLIT_THRESHOLD,
   DEADLINE_HORIZON_DAYS,
   DEFAULT_WEIGHTS,
-  HOURS_PER_ESTIMATE_POINT,
   MOMENTUM_IN_PROGRESS,
   MOMENTUM_PER_CARRYOVER_DAY,
   NEUTRAL,
@@ -85,17 +84,6 @@ export function momentum(c: Candidate, ctx: ScoringContext): number {
 }
 
 /**
- * Calendar fit: does today's largest free block cover the estimate? Neutral
- * when either side is unknown, so a missing estimate never buries an issue.
- */
-export function calendarFit(c: Candidate, ctx: ScoringContext): number {
-  if (ctx.largestFreeBlockHours == null || c.issue.estimate == null) return NEUTRAL;
-  const needed = c.issue.estimate * HOURS_PER_ESTIMATE_POINT;
-  if (needed <= 0) return NEUTRAL;
-  return clamp01(ctx.largestFreeBlockHours / needed);
-}
-
-/**
  * Drop goal leverage and redistribute its weight proportionally across the
  * remaining factors, keeping the total at 1.
  */
@@ -137,7 +125,6 @@ export function scoreAll(
         deadlinePressure: deadlinePressure(candidate, ctx.today),
         unblocksOthers: unblocksOthers(candidate),
         momentum: momentum(candidate, ctx),
-        calendarFit: calendarFit(candidate, ctx),
       };
 
       const contributions = Object.fromEntries(

@@ -17,7 +17,9 @@ import { createClient } from "@supabase/supabase-js";
  */
 type Probe =
   | { file: string; what: string; kind: "column"; table: string; column: string }
-  | { file: string; what: string; kind: "backfill"; table: string; column: string };
+  | { file: string; what: string; kind: "backfill"; table: string; column: string }
+  /** Applied when the column is GONE, for migrations that drop things. */
+  | { file: string; what: string; kind: "absent"; table: string; column: string };
 
 const PROBES: Probe[] = [
   { file: "0001_init", what: "core schema", kind: "column", table: "settings", column: "email" },
@@ -26,6 +28,7 @@ const PROBES: Probe[] = [
   { file: "0005_webhook_secret", what: "per-venture webhook secrets", kind: "backfill", table: "workspaces", column: "webhook_secret" },
   { file: "0006_team_scoping", what: "venture scoped to a Linear team", kind: "column", table: "workspaces", column: "linear_team_id" },
   { file: "0007_also_today_reasons", what: "reasons on also-today items", kind: "column", table: "days", column: "also_today_reasons" },
+  { file: "0008_drop_scheduler", what: "scheduler, calendar, push and email removed", kind: "absent", table: "days", column: "brief_sent_at" },
 ];
 
 async function main() {
@@ -45,7 +48,10 @@ async function main() {
     const { data, error } = await db.from(probe.table).select(probe.column);
 
     let applied: boolean;
-    if (error) {
+    if (probe.kind === "absent") {
+      // Inverted: this migration removes the column, so an error means done.
+      applied = Boolean(error);
+    } else if (error) {
       applied = false;
     } else if (probe.kind === "backfill") {
       // Applied only once every row has a value, and vacuously true with no rows.
@@ -60,9 +66,6 @@ async function main() {
       `  ${applied ? "applied" : "PENDING"}  ${probe.file.padEnd(22)} ${probe.what}`,
     );
   }
-
-  // 0002 schedules pg_cron, which adds no column and cannot be probed this way.
-  console.log(`  unknown  ${"0002_tick_cron".padEnd(22)} pg_cron schedule — check cron.job in SQL`);
 
   const { data } = await db.from("workspaces").select("venture_name, webhook_secret");
   if (data) {

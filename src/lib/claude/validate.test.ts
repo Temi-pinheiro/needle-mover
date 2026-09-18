@@ -22,8 +22,8 @@ function scored(identifier: string, venture: string, over: { blocked?: boolean; 
       project: null,
     },
     total: over.total ?? 0.5,
-    factors: { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0, calendarFit: 0 },
-    contributions: { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0, calendarFit: 0 },
+    factors: { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0 },
+    contributions: { goalLeverage: 0, deadlinePressure: 0, unblocksOthers: 0, momentum: 0 },
     carryOverDays: 0,
   };
 }
@@ -43,7 +43,6 @@ const also = (...identifiers: string[]) =>
 
 const pick = (over: Partial<Pick> = {}): Pick => ({
   needle_mover: "MEN-1",
-  backup: "ACM-1",
   reason: "It is the only thing that moves the launch target this week.",
   first_step: "Open the pricing doc and list three tiers.",
   also_today: [],
@@ -55,7 +54,6 @@ describe("resolvePick", () => {
   it("resolves a clean pick with no repairs", () => {
     const r = resolvePick(pick({ also_today: also("MEN-2", "ACM-2") }), shortlist);
     expect(r.needleMover.candidate.issue.identifier).toBe("MEN-1");
-    expect(r.backup?.candidate.issue.identifier).toBe("ACM-1");
     expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MEN-2", "ACM-2"]);
     expect(r.repairs).toEqual([]);
   });
@@ -68,41 +66,22 @@ describe("resolvePick", () => {
     expect(() => resolvePick(pick(), [])).toThrow(PickError);
   });
 
-  it("substitutes the next-best issue when the backup is unknown", () => {
-    const r = resolvePick(pick({ backup: "GHOST-2" }), shortlist);
-    expect(r.backup?.candidate.issue.identifier).toBe("MEN-2");
-    expect(r.repairs.join(" ")).toMatch(/not on the shortlist/);
-  });
-
-  it("substitutes when the backup repeats the needle mover", () => {
-    const r = resolvePick(pick({ backup: "MEN-1" }), shortlist);
-    expect(r.backup?.candidate.issue.identifier).toBe("MEN-2");
-    expect(r.repairs.join(" ")).toMatch(/matched the needle mover/);
-  });
-
-  it("never substitutes a blocked issue as the backup", () => {
-    const list = [shortlist[0], scored("MEN-9", "Meridian", { blocked: true }), shortlist[2]];
-    const r = resolvePick(pick({ backup: "GHOST" }), list);
-    expect(r.backup?.candidate.issue.identifier).toBe("ACM-1");
-  });
-
-  it("leaves the backup null when nothing else is startable", () => {
-    const r = resolvePick(pick({ backup: "GHOST" }), [shortlist[0]]);
-    expect(r.backup).toBeNull();
-  });
-
   it("drops also-today items that are unknown, duplicated or already chosen", () => {
     const r = resolvePick(
       pick({ also_today: also("MEN-1", "ACM-1", "MEN-2", "MEN-2", "GHOST") }),
       shortlist,
     );
-    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["MEN-2"]);
+    // ACM-1 survives now that there is no backup for it to collide with.
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual([
+      "ACM-1",
+      "MEN-2",
+    ]);
     expect(r.repairs.join(" ")).toMatch(/unusable/);
   });
 
   it("allows exactly two ventures in also today", () => {
     const r = resolvePick(
-      pick({ needle_mover: "MEN-1", backup: "MEN-2", also_today: also("ACM-1", "ACM-2", "ZED-1") }),
+      pick({ needle_mover: "MEN-1", also_today: also("ACM-1", "ACM-2", "ZED-1") }),
       shortlist,
     );
     expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["ACM-1", "ACM-2", "ZED-1"]);
@@ -114,8 +93,7 @@ describe("resolvePick", () => {
     const r = resolvePick(
       pick({
         needle_mover: "MEN-1",
-        backup: "MEN-2",
-        also_today: also("ACM-1", "ZED-1", "QRX-1", "ACM-2"),
+              also_today: also("ACM-1", "ZED-1", "QRX-1", "ACM-2"),
       }),
       list,
     );
@@ -125,15 +103,15 @@ describe("resolvePick", () => {
     expect(r.repairs.join(" ")).toMatch(/2 ventures/);
   });
 
-  it("enforces the five-item cap", () => {
+  it("enforces the three-item cap", () => {
     const big = Array.from({ length: 8 }, (_, i) => scored(`MEN-${i + 10}`, "Meridian"));
     const list = [shortlist[0], ...big];
     const r = resolvePick(
-      pick({ backup: "MEN-10", also_today: also(...big.slice(1).map((b) => b.candidate.issue.identifier)) }),
+      pick({ also_today: also(...big.slice(1).map((b) => b.candidate.issue.identifier)) }),
       list,
     );
-    expect(r.alsoToday).toHaveLength(5);
-    expect(r.repairs.join(" ")).toMatch(/5 items/);
+    expect(r.alsoToday).toHaveLength(3);
+    expect(r.repairs.join(" ")).toMatch(/3 items/);
   });
 
   it("flags an empty first step", () => {
@@ -175,7 +153,7 @@ describe("identifiers across separate Linear organisations", () => {
 
   it("resolves a qualified pick to the right venture", () => {
     const r = resolvePick(
-      pick({ needle_mover: "Northbound/ENG-1", backup: "Meridian/MEN-2" }),
+      pick({ needle_mover: "Northbound/ENG-1" }),
       collided,
     );
     expect(r.needleMover.candidate.issue.ventureName).toBe("Northbound");
@@ -183,7 +161,7 @@ describe("identifiers across separate Linear organisations", () => {
   });
 
   it("falls back to the higher-scored entry when Claude drops the prefix", () => {
-    const r = resolvePick(pick({ needle_mover: "ENG-1", backup: "MEN-2" }), collided);
+    const r = resolvePick(pick({ needle_mover: "ENG-1" }), collided);
     expect(r.needleMover.candidate.issue.ventureName).toBe("Meridian");
     expect(r.repairs.join(" ")).toMatch(/ambiguous across ventures/);
   });

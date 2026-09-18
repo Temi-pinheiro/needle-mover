@@ -22,13 +22,11 @@ export type NowViewProps = {
   dayId: string;
   date: string;
   active: TaskCard;
-  showingBackup: boolean;
   blockReason: string | null;
   started: boolean;
   done: boolean;
   firstStep: string;
   reason: string;
-  focusWindow: string | null;
   carryOverDays: number;
   needsSplit: boolean;
   degraded: boolean;
@@ -37,8 +35,8 @@ export type NowViewProps = {
 
 export function NowView(props: NowViewProps) {
   const {
-    dayId, active, showingBackup, blockReason, started, done,
-    firstStep, reason, focusWindow, carryOverDays, needsSplit, degraded, alsoToday,
+    dayId, active, blockReason, started, done,
+    firstStep, reason, carryOverDays, needsSplit, degraded, alsoToday,
   } = props;
 
   const [pending, startTransition] = useTransition();
@@ -70,10 +68,7 @@ export function NowView(props: NowViewProps) {
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 md:py-24">
-      <HeaderNav
-        eyebrow={showingBackup ? "Backup task" : "Today’s needle mover"}
-        date={props.date}
-      />
+      <HeaderNav eyebrow="Today’s needle mover" date={props.date} />
 
       <div className="grid gap-6 md:grid-cols-12">
         {/* ---------------------------------------------------- the card -- */}
@@ -87,7 +82,6 @@ export function NowView(props: NowViewProps) {
             <div className="mb-7 flex flex-wrap items-center gap-2.5">
               <Tag>{active.ventureName}</Tag>
               <span className="font-mono text-[11px] text-ink-faint">{active.identifier}</span>
-              {showingBackup && <Tag tone="yellow">Fallback</Tag>}
             </div>
 
             <h1 className="editorial text-[2.5rem] text-ink sm:text-[3.25rem]">
@@ -121,10 +115,6 @@ export function NowView(props: NowViewProps) {
                     </p>
                   </div>
                 </div>
-
-                {focusWindow && (
-                  <p className="mt-5 font-mono text-xs text-ink-muted">{focusWindow}</p>
-                )}
               </>
             )}
 
@@ -168,11 +158,9 @@ export function NowView(props: NowViewProps) {
                       </Secondary>
                     )}
 
-                    {!showingBackup && (
-                      <Secondary onClick={() => setAskingReason(true)} disabled={pending} icon={<Slash />}>
-                        Blocked
-                      </Secondary>
-                    )}
+                    <Secondary onClick={() => setAskingReason(true)} disabled={pending} icon={<Slash />}>
+                      Blocked
+                    </Secondary>
                   </div>
                 )}
 

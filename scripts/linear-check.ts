@@ -191,7 +191,6 @@ function report(
 
   const result = scoreAll(candidates, {
     today: new Date().toISOString().slice(0, 10),
-    largestFreeBlockHours: null,
     carryOver: {},
   });
 
@@ -200,7 +199,7 @@ function report(
     return;
   }
 
-  console.log("\nHow today would rank (no calendar, no carry-over)");
+  console.log("\nHow today would rank (no carry-over)");
   for (const [i, r] of result.ranked.entries()) {
     const factors = Object.entries(r.contributions)
       .filter(([, v]) => v > 0.001)

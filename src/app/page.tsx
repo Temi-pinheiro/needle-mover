@@ -3,7 +3,7 @@ import type { DayEvent, Issue, Project, Workspace } from "@/lib/db/types";
 import { carryOverMap, getSettings, materializeDay } from "@/lib/day";
 import { issueStates, nowState } from "@/lib/day-state";
 import { needsSplitPrompt } from "@/lib/scoring/score";
-import { localDate, localTime } from "@/lib/time";
+import { localDate } from "@/lib/time";
 import { planToday } from "./actions";
 import { NowView, type TaskCard } from "@/components/NowView";
 import { DayClosed } from "@/components/DayClosed";
@@ -85,7 +85,6 @@ export default async function Page() {
             : null
         }
         tomorrowNote={day.recap_tomorrow_note}
-        recapWasSent={Boolean(day.recap_sent_at)}
       />
     );
   }
@@ -133,26 +132,16 @@ export default async function Page() {
   const carryOver = await carryOverMap(today);
   const carryOverDays = day.needle_mover_id ? (carryOver[day.needle_mover_id] ?? 0) : 0;
 
-  const focusWindow =
-    day.focus_window_start && day.focus_window_end
-      ? `Focus window ${localTime(new Date(day.focus_window_start), settings.timezone)}–${localTime(
-          new Date(day.focus_window_end),
-          settings.timezone,
-        )}`
-      : null;
-
   return (
     <NowView
       dayId={day.id}
       date={today}
       active={toCard(active)}
-      showingBackup={state.showingBackup}
       blockReason={state.blockReason}
       started={state.started}
       done={state.done}
       firstStep={day.first_step ?? ""}
       reason={day.reason ?? ""}
-      focusWindow={focusWindow}
       carryOverDays={carryOverDays}
       needsSplit={needsSplitPrompt(carryOverDays)}
       degraded={day.degraded_scoring}

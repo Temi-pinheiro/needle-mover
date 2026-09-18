@@ -1,23 +1,15 @@
 import { db, unwrap } from "@/lib/db/client";
-import { decrypt } from "@/lib/crypto";
-import type { Day, DayEvent, GoogleAccount, Issue, Project, Settings, Workspace } from "@/lib/db/types";
-import { busyIntervals } from "@/lib/google/client";
-import { computeFreeBlocks, DAY_START_HOUR, largestFreeBlock } from "@/lib/google/freebusy";
-import { pickNeedleMover, type FreeBlock as PromptBlock } from "@/lib/claude/pick";
+import type { Day, DayEvent, Issue, Project, Settings, Workspace } from "@/lib/db/types";
+import { pickNeedleMover } from "@/lib/claude/pick";
 import { scoreAll } from "@/lib/scoring/score";
 import type { Candidate } from "@/lib/scoring/types";
-import { addDays, localDate, localInstant, localTime } from "@/lib/time";
+import { addDays, localDate } from "@/lib/time";
 
 /** How far back to look when computing a carry-over streak. */
 const CARRYOVER_LOOKBACK_DAYS = 5;
 
 export async function getSettings(): Promise<Settings> {
   return unwrap(await db().from("settings").select("*").single()) as Settings;
-}
-
-export async function getGoogleAccount(): Promise<GoogleAccount | null> {
-  const { data } = await db().from("google_accounts").select("*").maybeSingle();
-  return (data as GoogleAccount | null) ?? null;
 }
 
 /**
@@ -130,34 +122,6 @@ export async function carryOverMap(today: string): Promise<Record<string, number
   return issueId ? { [issueId]: streak } : {};
 }
 
-/**
- * Today's free calendar blocks, between the start of the working day (or now,
- * if later) and the close-day cutoff.
- */
-export async function todaysFreeBlocks(
-  settings: Settings,
-  google: GoogleAccount | null,
-  now: Date,
-): Promise<ReturnType<typeof computeFreeBlocks>> {
-  if (!google) return [];
-
-  const date = localDate(now, settings.timezone);
-  const dayStart = localInstant(date, `${String(DAY_START_HOUR).padStart(2, "0")}:00`, settings.timezone);
-  const windowStart = new Date(Math.max(dayStart.getTime(), now.getTime()));
-  const windowEnd = localInstant(date, settings.close_cutoff_time.slice(0, 5), settings.timezone);
-
-  if (windowEnd <= windowStart) return [];
-
-  try {
-    const busy = await busyIntervals(decrypt(google.refresh_token), windowStart, windowEnd);
-    return computeFreeBlocks(busy, windowStart.toISOString(), windowEnd.toISOString());
-  } catch {
-    // A calendar outage must not cost TP the brief; calendar fit scores
-    // neutral when there are no blocks.
-    return [];
-  }
-}
-
 export type PlanResult =
   | { status: "planned"; day: Day; repairs: string[]; degraded: boolean }
   | { status: "no-candidates" };
@@ -169,45 +133,23 @@ export type PlanResult =
  */
 export async function planDay(now: Date): Promise<PlanResult> {
   const settings = await getSettings();
-  const google = await getGoogleAccount();
   const today = localDate(now, settings.timezone);
 
   const day = await materializeDay(today, settings.timezone);
 
-  const [candidates, carryOver, freeBlocks] = await Promise.all([
-    loadCandidates(),
-    carryOverMap(today),
-    todaysFreeBlocks(settings, google, now),
-  ]);
+  const [candidates, carryOver] = await Promise.all([loadCandidates(), carryOverMap(today)]);
 
-  const largest = largestFreeBlock(freeBlocks);
-  const scoring = scoreAll(candidates, {
-    today,
-    largestFreeBlockHours: largest?.hours ?? null,
-    carryOver,
-  });
+  const scoring = scoreAll(candidates, { today, carryOver });
 
   if (scoring.shortlist.length === 0) return { status: "no-candidates" };
 
-  const promptBlocks: PromptBlock[] = freeBlocks.map((b) => ({
-    start: localTime(new Date(b.start), settings.timezone),
-    end: localTime(new Date(b.end), settings.timezone),
-    hours: b.hours,
-  }));
-
-  const pick = await pickNeedleMover({
-    today,
-    timezone: settings.timezone,
-    freeBlocks: promptBlocks,
-    scoring,
-  });
+  const pick = await pickNeedleMover({ today, timezone: settings.timezone, scoring });
 
   const updated = unwrap(
     await db()
       .from("days")
       .update({
         needle_mover_id: pick.needleMover.candidate.issue.id,
-        backup_id: pick.backup?.candidate.issue.id ?? null,
         also_today_ids: pick.alsoToday.map((a) => a.candidate.candidate.issue.id),
         also_today_reasons: Object.fromEntries(
           pick.alsoToday.map((a) => [a.candidate.candidate.issue.id, a.reason]),
@@ -215,8 +157,6 @@ export async function planDay(now: Date): Promise<PlanResult> {
         reason: pick.reason,
         first_step: pick.firstStep,
         plain_focus: pick.plainFocus,
-        focus_window_start: largest?.start ?? null,
-        focus_window_end: largest?.end ?? null,
         degraded_scoring: scoring.degraded,
       })
       .eq("id", day.id)
@@ -266,7 +206,7 @@ export async function logEvent(
  * report yesterday's numbers as today's close.
  */
 export type CloseResult =
-  | { status: "closed"; recapSent: boolean; note?: string }
+  | { status: "closed"; postedUpdates: number; note?: string }
   | { status: "already-closed" };
 
 export async function closeDay(now: Date): Promise<CloseResult> {
@@ -290,11 +230,7 @@ export async function closeDay(now: Date): Promise<CloseResult> {
     loadCandidates(),
     carryOverMap(addDays(today, 1)),
   ]);
-  const ranked = scoreAll(candidates, {
-    today: addDays(today, 1),
-    largestFreeBlockHours: null,
-    carryOver,
-  });
+  const ranked = scoreAll(candidates, { today: addDays(today, 1), carryOver });
   const top = ranked.ranked[0]?.candidate.issue ?? null;
   const tomorrow = top
     ? { identifier: top.identifier, title: top.title, ventureName: top.ventureName }
@@ -314,32 +250,19 @@ export async function closeDay(now: Date): Promise<CloseResult> {
     })
     .eq("id", day.id);
 
-  // The day is closed either way; a failed send is reported, not fatal.
-  let recapSent = false;
-  let note: string | undefined;
-  try {
-    const { sendRecap } = await import("@/lib/email/send");
-    await sendRecap(settings.email, {
-      date: today,
-      summary: text.summary,
-      needleMover: facts.needleMover,
-      needleMoverDone: facts.needleMoverDone,
-      blockReason: facts.blockReason,
-      closed: facts.closed,
-      movements: facts.movements,
-      tomorrow,
-      tomorrowNote: text.tomorrow_note,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-    });
-    await db().from("days").update({ recap_sent_at: new Date().toISOString() }).eq("id", day.id);
-    recapSent = true;
-  } catch (err) {
-    note = `The day is closed, but the recap email did not send: ${
-      err instanceof Error ? err.message : String(err)
-    }`;
-  }
+  // The day is closed either way. Posting back to Linear is what carries the
+  // outcome to anyone else; a workspace being unreachable should not undo it.
+  const { postProjectUpdates } = await import("@/lib/recap");
+  const { posted, failed } = await postProjectUpdates(facts, text.summary);
 
-  return { status: "closed", recapSent, note };
+  const note =
+    failed.length > 0
+      ? `Closed. ${posted} project update(s) posted; ${failed
+          .map((f) => `${f.project} failed (${f.error})`)
+          .join("; ")}`
+      : undefined;
+
+  return { status: "closed", postedUpdates: posted, note };
 }
 
 /**
@@ -378,7 +301,6 @@ export async function reopenDay(date: string): Promise<{ reopened: boolean; note
       recap_summary: null,
       recap_tomorrow_note: null,
       recap_tomorrow_id: null,
-      recap_sent_at: null,
     })
     .eq("id", day.id);
 
@@ -386,8 +308,8 @@ export async function reopenDay(date: string): Promise<{ reopened: boolean; note
 
   return {
     reopened: true,
-    note: day.recap_sent_at
-      ? "Reopened. The recap you already received is now out of date; closing again sends a corrected one."
+    note: day.recap_summary
+      ? "Reopened. Closing again rewrites the recap and posts fresh project updates to Linear."
       : undefined,
   };
 }
