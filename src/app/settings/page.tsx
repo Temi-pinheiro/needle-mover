@@ -10,6 +10,7 @@ import {
 } from "@/components/SettingsClient";
 import { WebhookDetails } from "@/components/WebhookDetails";
 import { TeamScope } from "@/components/TeamScope";
+import { appPath } from "@/lib/app-url";
 import { addWorkspace, saveSchedule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,6 @@ export default async function SettingsPage() {
 
   const settings = settingsRes.data as Settings | null;
   const workspaces = (workspacesRes.data ?? []) as Workspace[];
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
@@ -118,7 +118,7 @@ export default async function SettingsPage() {
                 <WebhookDetails
                   key={w.id}
                   ventureName={w.venture_name}
-                  url={`${appUrl}/api/webhooks/linear/${w.id}`}
+                  url={appPath(`/api/webhooks/linear/${w.id}`)}
                   secret={w.webhook_secret}
                 />
               ))}

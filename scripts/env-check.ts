@@ -34,6 +34,12 @@ for (const key of KEYS) {
   if (/\s/.test(raw.trim())) issues.push("contains a space");
   if (raw.includes("<") || raw.includes(">")) issues.push("looks like an unfilled placeholder");
 
+  // A trailing slash on the origin produces `https://host//auth/callback`,
+  // which OAuth providers match as a different URI and reject.
+  if (key === "NEXT_PUBLIC_APP_URL" && raw.trim().endsWith("/")) {
+    issues.push("has a trailing slash — strip it, or OAuth redirects will not match");
+  }
+
   if (issues.length > 0) problems++;
   console.log(
     `  ${key.padEnd(30)} ${String(raw.length).padStart(4)} chars  ${

@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
 import { authClient, currentUser } from "@/lib/supabase/server";
+import { appPath } from "@/lib/app-url";
 
 export const dynamic = "force-dynamic";
 
 async function signIn() {
   "use server";
   const supabase = await authClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${origin}/auth/callback` },
+    options: { redirectTo: appPath("/auth/callback") },
   });
 
   if (error) throw new Error(error.message);
