@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { randomBytes } from "node:crypto";
-import { decrypt, encrypt, safeEqual, shareToken } from "./crypto";
+import { decrypt, DecryptionError, encrypt, safeEqual, shareToken } from "./crypto";
 
 beforeAll(() => {
   process.env.ENCRYPTION_KEY = randomBytes(32).toString("base64");
@@ -25,7 +25,18 @@ describe("encrypt/decrypt", () => {
   });
 
   it("rejects a malformed payload", () => {
-    expect(() => decrypt("not-a-payload")).toThrow(/Malformed/);
+    expect(() => decrypt("not-a-payload")).toThrow(DecryptionError);
+  });
+
+  it("names the wrong key rather than repeating the crypto error", () => {
+    // AES-GCM reports a wrong key as "Unsupported state or unable to
+    // authenticate data", which is accurate and tells nobody what to fix.
+    const payload = encrypt("lin_api_secret");
+    process.env.ENCRYPTION_KEY = randomBytes(32).toString("base64");
+
+    expect(() => decrypt(payload)).toThrow(DecryptionError);
+    expect(() => decrypt(payload)).toThrow(/ENCRYPTION_KEY does not match/);
+    expect(() => decrypt(payload)).not.toThrow(/Unsupported state/);
   });
 
   it("rejects a key of the wrong length", () => {

@@ -1,5 +1,5 @@
 import { db, unwrap } from "@/lib/db/client";
-import { decrypt } from "@/lib/crypto";
+import { decrypt, DecryptionError } from "@/lib/crypto";
 import type { Workspace } from "@/lib/db/types";
 import { createLinearClient, paginate, type Connection, type LinearClient } from "./client";
 import {
@@ -28,6 +28,8 @@ export type SyncResult = {
   issues: number;
   targetedProjects: number;
   error?: string;
+  /** True when the failure was on our side and Linear was never reached. */
+  local?: boolean;
 };
 
 type ScopeIssue = { estimate: number | null; state: { type: string } };
@@ -60,9 +62,14 @@ export async function syncWorkspace(workspace: Workspace): Promise<SyncResult> {
 
     return result;
   } catch (err) {
-    // One broken workspace must not stop the others — a brief covering three
-    // ventures out of four is still worth sending.
-    return { ...result, error: err instanceof Error ? err.message : String(err) };
+    // One broken workspace must not stop the others — three ventures out of
+    // four is still worth ranking.
+    return {
+      ...result,
+      error: err instanceof Error ? err.message : String(err),
+      // A key we cannot read is ours to fix; Linear was never contacted.
+      local: err instanceof DecryptionError,
+    };
   }
 }
 

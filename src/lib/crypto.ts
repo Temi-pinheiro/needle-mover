@@ -39,17 +39,44 @@ export function encrypt(plaintext: string): string {
   return [VERSION, iv.toString("base64"), tag.toString("base64"), ciphertext.toString("base64")].join(".");
 }
 
+/**
+ * Thrown when stored ciphertext cannot be read. Its own type because the
+ * caller's handling differs entirely: a credential that cannot be decrypted is
+ * a configuration problem here, not a failure of the service it belongs to.
+ */
+export class DecryptionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DecryptionError";
+  }
+}
+
 export function decrypt(payload: string): string {
   const [version, iv, tag, ciphertext] = payload.split(".");
   if (version !== VERSION || !iv || !tag || !ciphertext) {
-    throw new Error("Malformed ciphertext.");
+    throw new DecryptionError("Stored value is not in the expected format.");
   }
-  const decipher = createDecipheriv(ALGORITHM, key(), Buffer.from(iv, "base64"));
-  decipher.setAuthTag(Buffer.from(tag, "base64"));
-  return Buffer.concat([
-    decipher.update(Buffer.from(ciphertext, "base64")),
-    decipher.final(),
-  ]).toString("utf8");
+
+  try {
+    const decipher = createDecipheriv(ALGORITHM, key(), Buffer.from(iv, "base64"));
+    decipher.setAuthTag(Buffer.from(tag, "base64"));
+    return Buffer.concat([
+      decipher.update(Buffer.from(ciphertext, "base64")),
+      decipher.final(),
+    ]).toString("utf8");
+  } catch (err) {
+    // AES-GCM reports a wrong key and tampered data identically, as
+    // "Unsupported state or unable to authenticate data" — accurate and
+    // completely unhelpful about what to do. In practice it is almost always
+    // ENCRYPTION_KEY differing from the one that wrote the row.
+    if (err instanceof Error && /unable to authenticate|unsupported state/i.test(err.message)) {
+      throw new DecryptionError(
+        "Could not decrypt the stored credential. ENCRYPTION_KEY does not match the one that " +
+          "saved it — check this deployment's value against the environment it was entered in.",
+      );
+    }
+    throw new DecryptionError(err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** Constant-time compare, for the /api/tick shared secret and webhook signatures. */

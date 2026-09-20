@@ -85,8 +85,15 @@ export async function planToday(): Promise<ActionResult> {
     // closed in Linear hours ago.
     const synced = await syncAll();
     const failed = synced.filter((s) => s.error);
+
     if (synced.length > 0 && failed.length === synced.length) {
-      return { ok: false, note: `Could not reach Linear: ${failed[0].error}` };
+      const first = failed[0];
+      return {
+        ok: false,
+        note: first.local
+          ? first.error // already says what to fix; do not blame Linear for it
+          : `Could not reach Linear: ${first.error}`,
+      };
     }
 
     const result = await planDay(new Date());
