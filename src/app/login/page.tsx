@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { authClient, currentUser } from "@/lib/supabase/server";
+import { allowedEmail, authClient, currentUser } from "@/lib/supabase/server";
 import { appPath } from "@/lib/app-url";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,7 @@ export default async function LoginPage({
 }) {
   if (await currentUser()) redirect("/");
   const denied = (await searchParams).denied === "1";
+  const configured = Boolean(allowedEmail());
 
   return (
     <main className="relative z-0 mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-5">
@@ -30,10 +31,23 @@ export default async function LoginPage({
         <p className="label mb-5">Needle Mover</p>
         <h1 className="editorial text-[2rem] text-ink">One thing that matters today.</h1>
 
-        {denied ? (
+        {denied && !configured ? (
+          /*
+           * Two different failures used to read identically. An unset
+           * allowlist refuses everyone by design, and saying "wrong account"
+           * for it sends you hunting through Google rather than your
+           * deployment's environment.
+           */
           <p className="mt-6 text-[15px] leading-relaxed text-pale-red-ink">
-            That account is not the one this app is set up for. Sign in with the address in
-            ALLOWED_EMAIL, or change it and restart the server.
+            This deployment has no <code className="font-mono text-[13px]">ALLOWED_EMAIL</code>{" "}
+            set, so every sign-in is refused. Set it to your own address in the environment and
+            deploy again.
+          </p>
+        ) : denied ? (
+          <p className="mt-6 text-[15px] leading-relaxed text-pale-red-ink">
+            That Google account is not the one this app is set up for. Sign in with the address
+            in <code className="font-mono text-[13px]">ALLOWED_EMAIL</code>, or change it in the
+            environment and deploy again.
           </p>
         ) : (
           <p className="mt-6 text-[15px] leading-relaxed text-ink-muted">
