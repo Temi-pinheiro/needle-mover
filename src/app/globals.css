@@ -38,6 +38,17 @@
   --cta-hover: #333333;
   --cta-ink: #ffffff;
 
+  /*
+   * Secondary buttons need a face of their own. Sharing the card's background
+   * and separating only by a hairline made them invisible as controls — you
+   * could not tell at a glance what was clickable, which is a worse failure
+   * than looking slightly less minimal.
+   */
+  --btn-face: #f1efec;
+  --btn-face-hover: #e7e4df;
+  --btn-border: #d6d3cd;
+  --btn-ink: #2f3437;
+
   /* Barely-there. Used on hover only; never as resting elevation. */
   --hover-lift: 0 2px 8px rgb(0 0 0 / 0.04);
 
@@ -76,6 +87,11 @@
     --cta-hover: #d8d5cf;
     --cta-ink: #171716;
 
+    --btn-face: #2c2c29;
+    --btn-face-hover: #363633;
+    --btn-border: #47463f;
+    --btn-ink: #e8e6e1;
+
     --hover-lift: 0 2px 8px rgb(0 0 0 / 0.3);
   }
 }
@@ -100,6 +116,10 @@
   --color-cta: var(--cta);
   --color-cta-hover: var(--cta-hover);
   --color-cta-ink: var(--cta-ink);
+  --color-btn-face: var(--btn-face);
+  --color-btn-face-hover: var(--btn-face-hover);
+  --color-btn-border: var(--btn-border);
+  --color-btn-ink: var(--btn-ink);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -157,6 +177,21 @@ body {
 
 .pressable:active {
   transform: scale(0.98);
+}
+
+/*
+ * Quiet controls that are still controls. Reveal, Copy and Remove should not
+ * compete with the day's actions, but they still have to look clickable at
+ * rest — hover is not an affordance, it is a reward for already guessing.
+ */
+.linkish {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ink-faint) 45%, transparent);
+  text-underline-offset: 4px;
+}
+
+.linkish:hover {
+  text-decoration-color: currentColor;
 }
 
 .pressable:focus-visible {

@@ -26,7 +26,7 @@ export function ReopenDay({ recapWasSent }: { recapWasSent: boolean }) {
     return (
       <button
         onClick={() => setArmed(true)}
-        className="pressable text-[13px] text-ink-faint transition-colors hover:text-ink"
+        className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover"
       >
         Reopen the day
       </button>
@@ -40,7 +40,7 @@ export function ReopenDay({ recapWasSent }: { recapWasSent: boolean }) {
         onClick={() =>
           start(async () => setNote((await reopenToday()).note ?? "Reopened. Back to the Now view."))
         }
-        className="pressable rounded-md bg-cta px-4 py-2 text-[13px] font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
+        className="pressable rounded-lg bg-cta px-4 py-2 text-[13px] font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
       >
         {pending ? "Reopening…" : "Yes, reopen"}
       </button>

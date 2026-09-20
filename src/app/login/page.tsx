@@ -58,7 +58,7 @@ export default async function LoginPage({
         <form action={signIn}>
           <button
             type="submit"
-            className="pressable mt-8 w-full rounded-md bg-cta px-5 py-3 text-sm font-medium text-cta-ink hover:bg-cta-hover"
+            className="pressable mt-8 w-full rounded-lg bg-cta px-5 py-3 text-sm font-medium text-cta-ink hover:bg-cta-hover"
           >
             Continue with Google
           </button>

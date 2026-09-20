@@ -191,3 +191,57 @@ export async function setWorkspaceTeam(
     note: team ? `Scoped to ${team.key}. Syncs on the next tick.` : "Scoped to the whole organisation.",
   };
 }
+
+/**
+ * Refreshes the local cache from Linear.
+ *
+ * Nothing syncs on a schedule any more, so the cache is only as fresh as the
+ * last time a day was planned. Reshuffling priorities or deleting issues in
+ * Linear is invisible here until this runs.
+ *
+ * Note what it does not do: today's picks were already chosen and written to
+ * the day row, so syncing updates the underlying issues without re-ranking
+ * them. Changing what the day shows needs a re-pick.
+ */
+export async function syncNow(): Promise<SettingsResult> {
+  await guard();
+
+  const { syncAll } = await import("@/lib/linear/sync");
+  const results = await syncAll();
+
+  if (results.length === 0) return { ok: false, note: "No active ventures to sync." };
+
+  const failed = results.filter((r) => r.error);
+  const issues = results.reduce((n, r) => n + r.issues, 0);
+  const targeted = results.reduce((n, r) => n + r.targetedProjects, 0);
+
+  revalidatePath("/");
+  revalidatePath("/settings");
+
+  if (failed.length === results.length) {
+    return { ok: false, note: failed[0].error };
+  }
+
+  const note =
+    `${results.length - failed.length}/${results.length} ventures, ${issues} open issues, ` +
+    `${targeted} targeted project(s).` +
+    (failed.length ? ` ${failed.map((f) => `${f.ventureName} failed`).join(", ")}.` : "");
+
+  return { ok: true, note };
+}
+
+/**
+ * Re-ranks today and asks Claude again.
+ *
+ * Separate from syncing because it is the expensive half and it discards the
+ * day's existing picks. What you did today survives: start, blocked and done
+ * are events, and re-picking does not un-happen them.
+ */
+export async function repickToday(): Promise<SettingsResult> {
+  await guard();
+
+  const { planToday } = await import("@/app/actions");
+  const result = await planToday();
+  revalidatePath("/");
+  return { ok: result.ok, note: result.note ?? (result.ok ? "Today re-picked." : undefined) };
+}

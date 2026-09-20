@@ -31,7 +31,7 @@ export function ActionForm({
         <button
           type="submit"
           disabled={pending}
-          className="pressable rounded-md bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
+          className="pressable rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
         >
           {pending ? "Saving…" : submitLabel}
         </button>
@@ -71,7 +71,7 @@ export function Field({
         type={type}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-md border border-line bg-surface-sunken px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-ink-faint focus:border-ink"
+        className="mt-2 w-full rounded-lg border border-line bg-surface-sunken px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-ink-faint focus:border-ink"
       />
       {hint && <span className="mt-1.5 block text-[12px] leading-relaxed text-ink-faint">{hint}</span>}
     </label>
@@ -158,7 +158,7 @@ export function RemoveWorkspace({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="pressable text-[13px] text-ink-faint transition-colors hover:text-pale-red-ink"
+        className="pressable linkish text-[13px] text-ink-faint transition-colors hover:text-pale-red-ink"
       >
         Remove
       </button>
@@ -172,12 +172,12 @@ export function RemoveWorkspace({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={`Type "${name}"`}
-        className="w-40 rounded-md border border-line bg-surface-sunken px-3 py-1.5 text-[13px] outline-none focus:border-pale-red-ink"
+        className="w-40 rounded-lg border border-line bg-surface-sunken px-3 py-1.5 text-[13px] outline-none focus:border-pale-red-ink"
       />
       <button
         disabled={pending}
         onClick={() => start(async () => setNote((await removeWorkspace(workspaceId, value)).note ?? null))}
-        className="pressable rounded-md bg-pale-red-ink px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
+        className="pressable rounded-lg bg-pale-red-ink px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
       >
         Remove
       </button>
@@ -206,7 +206,7 @@ export function DisconnectCalendar() {
       <button
         disabled={pending}
         onClick={() => start(async () => setNote((await disconnectCalendar()).note ?? null))}
-        className="pressable rounded-md border border-line px-4 py-2 text-[13px] text-ink-muted transition-colors hover:text-ink disabled:opacity-50"
+        className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] text-btn-ink transition-colors hover:bg-btn-face-hover disabled:opacity-50"
       >
         {pending ? "Disconnecting…" : "Disconnect"}
       </button>

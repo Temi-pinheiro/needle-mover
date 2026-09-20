@@ -11,6 +11,8 @@ import {
 import { WebhookDetails } from "@/components/WebhookDetails";
 import { TeamScope } from "@/components/TeamScope";
 import { appPath } from "@/lib/app-url";
+import { LinearSync } from "@/components/LinearSync";
+import { localDate } from "@/lib/time";
 import { addWorkspace, saveSchedule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,12 @@ export default async function SettingsPage() {
 
   const settings = settingsRes.data as Settings | null;
   const workspaces = (workspacesRes.data ?? []) as Workspace[];
+
+  const today = settings ? localDate(new Date(), settings.timezone) : null;
+  const { data: dayRow } = today
+    ? await db().from("days").select("needle_mover_id").eq("date", today).maybeSingle()
+    : { data: null };
+  const plannedToday = Boolean((dayRow as { needle_mover_id: string | null } | null)?.needle_mover_id);
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
@@ -106,10 +114,21 @@ export default async function SettingsPage() {
           </ActionForm>
         </Section>
 
-        {/* -------------------------------------------------------- webhooks -- */}
+        {/* ------------------------------------------------------ refreshing -- */}
         {workspaces.length > 0 && (
           <Section
             index={3}
+            title="Refresh"
+            note="Nothing runs on a schedule, so the app only knows what it knew the last time you asked."
+          >
+            <LinearSync plannedToday={plannedToday} />
+          </Section>
+        )}
+
+        {/* -------------------------------------------------------- webhooks -- */}
+        {workspaces.length > 0 && (
+          <Section
+            index={4}
             title="Webhooks"
             note="Optional, and now more useful than it was: nothing syncs on a schedule any more, so without a webhook the cache only refreshes when you plan a day. In Linear: Settings → API → Webhooks → New webhook, subscribe to Issues, and paste these. Needs a deployed URL, because Linear cannot reach localhost."
           >
@@ -127,9 +146,9 @@ export default async function SettingsPage() {
         )}
 
         {/* -------------------------------------------------------- account -- */}
-        <Section index={4} title="Account">
+        <Section index={5} title="Account">
           <form action="/auth/signout" method="post">
-            <button className="pressable rounded-md border border-line px-4 py-2 text-[13px] text-ink-muted transition-colors hover:text-ink">
+            <button className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] text-btn-ink transition-colors hover:bg-btn-face-hover">
               Sign out
             </button>
           </form>

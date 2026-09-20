@@ -47,7 +47,7 @@ export function TeamScope({
     return (
       <button
         onClick={openPicker}
-        className="pressable text-[13px] text-ink-faint transition-colors hover:text-ink"
+        className="pressable linkish text-[13px] text-ink-faint transition-colors hover:text-ink"
       >
         {teamKey ? `Team ${teamKey}` : "Whole org"}
       </button>
@@ -63,7 +63,7 @@ export function TeamScope({
             key={team.id}
             disabled={pending}
             onClick={() => choose(team)}
-            className={`pressable rounded-md border px-2.5 py-1 text-[12px] transition-colors disabled:opacity-50 ${
+            className={`pressable rounded-lg border px-2.5 py-1 text-[12px] transition-colors disabled:opacity-50 ${
               team.key === teamKey
                 ? "border-ink bg-cta text-cta-ink"
                 : "border-line text-ink-soft hover:border-line-strong"
@@ -76,7 +76,7 @@ export function TeamScope({
           <button
             disabled={pending}
             onClick={() => choose(null)}
-            className={`pressable rounded-md border px-2.5 py-1 text-[12px] transition-colors disabled:opacity-50 ${
+            className={`pressable rounded-lg border px-2.5 py-1 text-[12px] transition-colors disabled:opacity-50 ${
               teamKey === null ? "border-ink bg-cta text-cta-ink" : "border-line text-ink-soft"
             }`}
           >

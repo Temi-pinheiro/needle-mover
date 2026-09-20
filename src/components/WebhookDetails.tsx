@@ -53,7 +53,7 @@ export function WebhookDetails({
         extra={
           <button
             onClick={() => setRevealed((v) => !v)}
-            className="pressable text-[12px] text-ink-faint transition-colors hover:text-ink"
+            className="pressable linkish text-[12px] text-ink-faint transition-colors hover:text-ink"
           >
             {revealed ? "Hide" : "Reveal"}
           </button>
@@ -81,12 +81,12 @@ function Row({
       <span className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-faint">
         {label}
       </span>
-      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-md border border-line bg-surface-sunken px-3 py-1.5 font-mono text-[11px] text-ink-soft">
+      <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-lg border border-line bg-surface-sunken px-3 py-1.5 font-mono text-[11px] text-ink-soft">
         {value}
       </code>
       <button
         onClick={onCopy}
-        className="pressable text-[12px] text-ink-faint transition-colors hover:text-ink"
+        className="pressable linkish text-[12px] text-ink-faint transition-colors hover:text-ink"
       >
         {copied ? "Copied" : "Copy"}
       </button>

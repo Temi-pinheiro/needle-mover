@@ -32,7 +32,7 @@ export function Notice({
           <button
             onClick={() => startTransition(async () => setNote((await action.run()).note ?? null))}
             disabled={pending}
-            className="pressable mt-9 rounded-md bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
+            className="pressable mt-9 rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
           >
             {pending ? "Working…" : action.label}
           </button>

@@ -66,7 +66,7 @@ export function ShareButton(props: ShareCardProps) {
       <button
         onClick={share}
         disabled={state === "working"}
-        className="pressable text-[13px] text-ink-faint transition-colors hover:text-ink disabled:opacity-50"
+        className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover disabled:opacity-50"
       >
         {label}
       </button>

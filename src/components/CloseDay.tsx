@@ -28,7 +28,7 @@ export function CloseDay() {
           <button
             disabled={pending}
             onClick={() => start(async () => setNote((await closeToday()).note ?? "Day closed. Recap sent."))}
-            className="pressable rounded-md bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
+            className="pressable rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
           >
             {pending ? "Writing the recap…" : "Yes, close it"}
           </button>
@@ -46,7 +46,7 @@ export function CloseDay() {
       ) : (
         <button
           onClick={() => setArmed(true)}
-          className="pressable text-[13px] text-ink-faint transition-colors hover:text-ink"
+          className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover"
         >
           Close the day
         </button>

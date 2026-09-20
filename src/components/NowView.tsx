@@ -129,18 +129,18 @@ export function NowView(props: NowViewProps) {
                       name="reason"
                       placeholder="What is blocking it?"
                       maxLength={140}
-                      className="min-w-0 flex-1 rounded-md border border-line bg-surface-sunken px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-ink-faint focus:border-ink"
+                      className="min-w-0 flex-1 rounded-lg border border-btn-border bg-surface-sunken px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-ink-faint focus:border-ink"
                     />
                     <button
                       type="submit"
-                      className="pressable rounded-md bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover"
+                      className="pressable rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover"
                     >
                       Log it
                     </button>
                     <button
                       type="button"
                       onClick={() => setAskingReason(false)}
-                      className="pressable rounded-md px-3 py-2.5 text-sm text-ink-muted transition-colors hover:text-ink"
+                      className="pressable rounded-lg px-3 py-2.5 text-sm text-ink-muted transition-colors hover:text-ink"
                     >
                       Cancel
                     </button>
@@ -174,7 +174,7 @@ export function NowView(props: NowViewProps) {
             )}
           </article>
 
-          <AlsoToday dayId={dayId} items={alsoToday} openByDefault={done} />
+          <AlsoToday dayId={dayId} items={alsoToday} />
 
           <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line">
             <CloseDay />
@@ -279,7 +279,7 @@ function Primary({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="pressable flex items-center gap-2 rounded-md bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
+      className="pressable flex items-center gap-2 rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
     >
       {icon}
       {children}
@@ -302,7 +302,7 @@ function Secondary({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="pressable hover-lift flex items-center gap-2 rounded-md border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:text-ink disabled:opacity-50"
+      className="pressable flex items-center gap-2 rounded-lg border border-btn-border bg-btn-face px-5 py-2.5 text-sm font-medium text-btn-ink hover:bg-btn-face-hover disabled:opacity-50"
     >
       {icon}
       {children}
