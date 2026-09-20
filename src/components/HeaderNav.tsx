@@ -23,7 +23,7 @@ export function HeaderNav({
         <p className="font-mono text-[11px] text-ink-faint">{date}</p>
         <Link
           href="/settings"
-          className="text-[13px] text-ink-muted transition-colors duration-200 hover:text-ink"
+          className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover disabled:opacity-50"
         >
           Settings
         </Link>

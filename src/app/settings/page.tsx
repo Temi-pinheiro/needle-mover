@@ -30,13 +30,18 @@ export default async function SettingsPage() {
   const { data: dayRow } = today
     ? await db().from("days").select("needle_mover_id").eq("date", today).maybeSingle()
     : { data: null };
-  const plannedToday = Boolean((dayRow as { needle_mover_id: string | null } | null)?.needle_mover_id);
+  const plannedToday = Boolean(
+    (dayRow as { needle_mover_id: string | null } | null)?.needle_mover_id,
+  );
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
       <header className="enter mb-12 flex items-baseline justify-between border-b border-line pb-5">
         <p className="label">Settings</p>
-        <Link href="/" className="text-[13px] text-ink-muted transition-colors hover:text-ink">
+        <Link
+          href="/"
+          className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover disabled:opacity-50"
+        >
           Back to today
         </Link>
       </header>
@@ -81,7 +86,12 @@ export default async function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-5">
                     <TeamScope workspaceId={w.id} teamKey={w.linear_team_key} />
-                    <InstantToggle label="Active" workspaceId={w.id} field="active" checked={w.active} />
+                    <InstantToggle
+                      label="Active"
+                      workspaceId={w.id}
+                      field="active"
+                      checked={w.active}
+                    />
                     <InstantToggle
                       label="Private"
                       workspaceId={w.id}
@@ -175,7 +185,9 @@ function Section({
       style={{ "--index": index } as React.CSSProperties}
     >
       <h2 className="editorial text-[1.5rem] text-ink">{title}</h2>
-      {note && <p className="mb-7 mt-2 max-w-[62ch] text-[13px] leading-relaxed text-ink-muted">{note}</p>}
+      {note && (
+        <p className="mb-7 mt-2 max-w-[62ch] text-[13px] leading-relaxed text-ink-muted">{note}</p>
+      )}
       {!note && <div className="mb-7" />}
       {children}
     </section>
