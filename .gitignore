@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# The template of variable names, all blank. It is the setup contract for
+# anyone deploying this, so it ships.
+!.env.example
 
 # vercel
 .vercel

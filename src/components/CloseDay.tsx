@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { closeToday } from "@/app/actions";
+import { notify } from "@/lib/notify";
 
 /**
  * Closing is deliberate and not undoable from the UI, so it asks once. It also
@@ -11,15 +12,6 @@ import { closeToday } from "@/app/actions";
 export function CloseDay() {
   const [armed, setArmed] = useState(false);
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
-
-  if (note) {
-    return (
-      <p role="status" className="py-4 text-[13px] text-ink-muted">
-        {note}
-      </p>
-    );
-  }
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-4">
@@ -27,7 +19,8 @@ export function CloseDay() {
         <>
           <button
             disabled={pending}
-            onClick={() => start(async () => setNote((await closeToday()).note ?? "Day closed. Recap sent."))}
+            // On success the page re-renders as the recap and this unmounts.
+            onClick={() => start(async () => notify(await closeToday()))}
             className="pressable rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
           >
             {pending ? "Writing the recap…" : "Yes, close it"}

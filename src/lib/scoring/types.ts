@@ -12,6 +12,11 @@ export type CandidateProject = {
   progress: number;
   /** Sum of estimates across the project, used for scope share. */
   scopeEstimate: number | null;
+  /**
+   * Linear project priority: 0 none, 1 urgent .. 4 low. Sets the priority
+   * tier in goal leverage. Null (not synced) falls back to issue priority.
+   */
+  priority?: number | null;
 };
 
 export type CandidateIssue = {

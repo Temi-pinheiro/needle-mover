@@ -13,6 +13,18 @@ import type { Pick } from "./schema";
 export const ALSO_TODAY_MAX_ITEMS = 3;
 export const ALSO_TODAY_MAX_VENTURES = 2;
 
+/**
+ * No project may fill more than this many of the day's four slots, needle
+ * mover included.
+ *
+ * The venture cap alone did not stop one project taking over: two projects in
+ * the same Linear team are one venture, so on 2026-09-24 Building Klaw took
+ * three of four slots while Bord and Needle Mover — both due the same week —
+ * got one and none. Each slot is also screen space, and a day that is 75% one
+ * project reads as if nothing else is due.
+ */
+export const MAX_PER_PROJECT = 2;
+
 /** An "also today" item and why it earned a place. */
 export type AlsoTodayItem = { candidate: ScoredCandidate; reason: string };
 
@@ -118,6 +130,12 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
     );
   }
 
+  // Issues with no project are not capped: "no project" is not one project.
+  const projectOf = (s: ScoredCandidate) => s.candidate.project?.id ?? null;
+  const perProject = new Map<string, number>();
+  const nmProject = projectOf(needleMover);
+  if (nmProject) perProject.set(nmProject, 1);
+
   const ventures = new Set<string>();
   const alsoToday: AlsoTodayItem[] = [];
   for (const item of candidates) {
@@ -126,11 +144,17 @@ export function resolvePick(pick: Pick, shortlist: ScoredCandidate[]): ResolvedP
       repairs.push(`"also today" exceeded ${ALSO_TODAY_MAX_VENTURES} ventures`);
       continue;
     }
+    const project = projectOf(item.candidate);
+    if (project && (perProject.get(project) ?? 0) >= MAX_PER_PROJECT) {
+      repairs.push(`more than ${MAX_PER_PROJECT} tasks from one project`);
+      continue;
+    }
     if (alsoToday.length >= ALSO_TODAY_MAX_ITEMS) {
       repairs.push(`"also today" exceeded ${ALSO_TODAY_MAX_ITEMS} items`);
       break;
     }
     ventures.add(venture);
+    if (project) perProject.set(project, (perProject.get(project) ?? 0) + 1);
     alsoToday.push(item);
   }
 

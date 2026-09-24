@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { repickToday, syncNow, type SettingsResult } from "@/app/settings/actions";
+import { notify } from "@/lib/notify";
 
 /**
  * Two actions that are easy to confuse, so the labels do the explaining.
@@ -13,13 +14,10 @@ import { repickToday, syncNow, type SettingsResult } from "@/app/settings/action
 export function LinearSync({ plannedToday }: { plannedToday: boolean }) {
   const [pending, start] = useTransition();
   const [running, setRunning] = useState<"sync" | "repick" | null>(null);
-  const [result, setResult] = useState<SettingsResult | null>(null);
-
   function run(which: "sync" | "repick", action: () => Promise<SettingsResult>) {
     setRunning(which);
-    setResult(null);
     start(async () => {
-      setResult(await action());
+      notify(await action());
       setRunning(null);
     });
   }
@@ -48,16 +46,6 @@ export function LinearSync({ plannedToday }: { plannedToday: boolean }) {
         onClick={() => run("repick", repickToday)}
       />
 
-      {result && (
-        <p
-          role="status"
-          className={`text-[13px] leading-relaxed ${
-            result.ok ? "text-pale-green-ink" : "text-pale-red-ink"
-          }`}
-        >
-          {result.note}
-        </p>
-      )}
     </div>
   );
 }

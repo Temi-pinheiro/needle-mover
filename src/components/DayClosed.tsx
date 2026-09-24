@@ -1,5 +1,6 @@
 import type { ClosedIssue, ProjectMovement } from "@/lib/recap";
 import { HeaderNav } from "./HeaderNav";
+import type { CaptureChrome } from "@/lib/capture/pipeline";
 import { ClosedList } from "./ClosedList";
 import { ReopenDay } from "./ReopenDay";
 
@@ -23,6 +24,7 @@ export function DayClosed({
   tomorrow,
   tomorrowNote,
   recapWasSent = false,
+  capture,
 }: {
   date: string;
   summary: string | null;
@@ -31,12 +33,13 @@ export function DayClosed({
   tomorrow: { identifier: string; title: string; ventureName: string } | null;
   tomorrowNote: string | null;
   recapWasSent?: boolean;
+  capture?: CaptureChrome;
 }) {
   const projects = new Set(closed.map((c) => `${c.ventureName}/${c.projectName ?? "none"}`)).size;
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-3xl px-5 pb-24 pt-16 sm:px-8">
-      <HeaderNav eyebrow="Day closed" date={date} />
+      <HeaderNav eyebrow="Day closed" date={date} capture={capture} />
 
       {summary && (
         <p

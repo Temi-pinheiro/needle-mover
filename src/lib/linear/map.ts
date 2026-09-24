@@ -28,6 +28,7 @@ export type LinearProjectNode = {
   state: string | null;
   targetDate: string | null;
   progress: number | null;
+  priority?: number | null;
 };
 
 export const isOpen = (stateType: string) => !CLOSED_STATE_TYPES.has(stateType);
@@ -106,6 +107,7 @@ export type ProjectRow = {
   progress: number;
   state: string | null;
   scope_estimate: number | null;
+  priority: number | null;
 };
 
 export function toProjectRow(
@@ -121,6 +123,7 @@ export function toProjectRow(
     progress: node.progress ?? 0,
     state: node.state,
     scope_estimate: scopeEstimate,
+    priority: node.priority ?? null,
   };
 }
 

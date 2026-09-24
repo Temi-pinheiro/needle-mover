@@ -170,3 +170,46 @@ describe("identifiers across separate Linear organisations", () => {
     expect(() => resolvePick(pick({ needle_mover: "GHOST-1" }), collided)).toThrow(PickError);
   });
 });
+
+describe("resolvePick — per-project cap", () => {
+  const inProject = (identifier: string, venture: string, projectId: string | null, total: number): ScoredCandidate => {
+    const s = scored(identifier, venture, { total });
+    return {
+      ...s,
+      candidate: {
+        ...s.candidate,
+        project: projectId
+          ? { id: projectId, name: projectId, targetDate: "2026-09-30", progress: 0, scopeEstimate: null }
+          : null,
+      },
+    };
+  };
+
+  // Two projects in one venture: the venture cap cannot tell them apart.
+  const list = [
+    inProject("BUI-1", "Klaw", "building-klaw", 0.9),
+    inProject("BUI-2", "Klaw", "building-klaw", 0.8),
+    inProject("BUI-3", "Klaw", "building-klaw", 0.7),
+    inProject("BUI-4", "Klaw", "bord", 0.6),
+    inProject("TEM-1", "TemisWorld", "needle-mover", 0.5),
+    inProject("BUI-5", "Klaw", null, 0.4),
+    inProject("BUI-6", "Klaw", null, 0.3),
+  ];
+
+  it("keeps a project to two of the four slots, counting the needle mover", () => {
+    const r = resolvePick(pick({ needle_mover: "BUI-1", also_today: also("BUI-2", "BUI-3", "BUI-4") }), list);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["BUI-2", "BUI-4"]);
+    expect(r.repairs).toContain("more than 2 tasks from one project");
+  });
+
+  it("leaves a list that already spreads across projects alone", () => {
+    const r = resolvePick(pick({ needle_mover: "BUI-1", also_today: also("BUI-2", "BUI-4", "TEM-1") }), list);
+    expect(r.alsoToday).toHaveLength(3);
+    expect(r.repairs).toEqual([]);
+  });
+
+  it("does not treat issues without a project as one project", () => {
+    const r = resolvePick(pick({ needle_mover: "BUI-5", also_today: also("BUI-6", "BUI-1") }), list);
+    expect(r.alsoToday.map((a) => a.candidate.candidate.issue.identifier)).toEqual(["BUI-6", "BUI-1"]);
+  });
+});

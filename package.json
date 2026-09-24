@@ -15,7 +15,8 @@
     "seed": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
     "migrations": "tsx --env-file-if-exists=.env.local scripts/migration-status.ts",
     "env:check": "tsx --env-file-if-exists=.env.local scripts/env-check.ts",
-    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts"
+    "scope": "tsx --env-file-if-exists=.env.local scripts/scope-venture.ts",
+    "capture:check": "tsx --env-file-if-exists=.env.local scripts/capture-check.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
@@ -27,6 +28,7 @@
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sonner": "^2.0.8",
     "zod": "^4.6.5"
   },
   "devDependencies": {

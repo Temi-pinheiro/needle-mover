@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { notify } from "@/lib/notify";
 import type { ActionResult } from "@/app/actions";
 
 /**
@@ -19,7 +20,6 @@ export function Notice({
   action?: { label: string; run: () => Promise<ActionResult> };
 }) {
   const [pending, startTransition] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
 
   return (
     <main className="relative z-0 mx-auto flex min-h-[100dvh] w-full max-w-2xl items-center px-5 py-16 sm:px-8">
@@ -30,7 +30,7 @@ export function Notice({
 
         {action && (
           <button
-            onClick={() => startTransition(async () => setNote((await action.run()).note ?? null))}
+            onClick={() => startTransition(async () => notify(await action.run()))}
             disabled={pending}
             className="pressable mt-9 rounded-lg bg-cta px-5 py-2.5 text-sm font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
           >
@@ -38,11 +38,6 @@ export function Notice({
           </button>
         )}
 
-        {note && (
-          <p role="status" className="mt-5 text-xs leading-relaxed text-pale-yellow-ink">
-            {note}
-          </p>
-        )}
       </div>
     </main>
   );

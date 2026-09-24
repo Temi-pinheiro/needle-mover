@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 
 /**
  * The webhook URL and secret for one venture.
@@ -18,15 +19,12 @@ export function WebhookDetails({
   secret: string | null;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
-
   async function copy(label: string, value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(label);
-      setTimeout(() => setCopied(null), 1600);
+      toast.success(`${ventureName} webhook ${label} copied.`);
     } catch {
-      setCopied(null);
+      toast.error("The browser would not allow copying. Select it and copy by hand.");
     }
   }
 
@@ -44,12 +42,11 @@ export function WebhookDetails({
     <div className="space-y-3 py-4">
       <p className="text-[14px] text-ink">{ventureName}</p>
 
-      <Row label="URL" value={url} onCopy={() => copy("url", url)} copied={copied === "url"} />
+      <Row label="URL" value={url} onCopy={() => copy("URL", url)} />
       <Row
         label="Secret"
         value={revealed ? secret : "•".repeat(32)}
         onCopy={() => copy("secret", secret)}
-        copied={copied === "secret"}
         extra={
           <button
             onClick={() => setRevealed((v) => !v)}
@@ -67,13 +64,11 @@ function Row({
   label,
   value,
   onCopy,
-  copied,
   extra,
 }: {
   label: string;
   value: string;
   onCopy: () => void;
-  copied: boolean;
   extra?: React.ReactNode;
 }) {
   return (
@@ -88,7 +83,7 @@ function Row({
         onClick={onCopy}
         className="pressable linkish text-[12px] text-ink-faint transition-colors hover:text-ink"
       >
-        {copied ? "Copied" : "Copy"}
+        Copy
       </button>
       {extra}
     </div>

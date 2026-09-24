@@ -26,6 +26,14 @@ export const PRIORITY_SCORE: Record<number, number> = {
   4: 0.25, // low
 };
 
+/**
+ * How much issue priority can move an issue within its project's priority
+ * tier. Kept below the gap between tiers, so issue priority orders work inside
+ * a project but can never lift a lower-priority project over a higher one.
+ * See `priorityTerm`.
+ */
+export const ISSUE_PRIORITY_WITHIN_TIER = 0.15;
+
 /** Deadline pressure decays to zero this many days out. */
 export const DEADLINE_HORIZON_DAYS = 30;
 
@@ -66,6 +74,17 @@ export function targetedThreshold(candidateCount: number): number {
 
 /** How many candidates go to Claude. */
 export const SHORTLIST_SIZE = 15;
+
+/**
+ * No project takes more than this many shortlist places.
+ *
+ * Scores between projects of equal priority and deadline are nearly flat, so
+ * a plain top 15 is decided by backlog size: on 2026-09-24 Bord (38 open
+ * issues) and Building Klaw filled all fifteen, and Needle Mover — equally
+ * urgent, due the same day — was never shown to Claude at all. Five is enough
+ * for Claude to choose well within one project, and leaves room for three.
+ */
+export const SHORTLIST_MAX_PER_PROJECT = 5;
 
 /**
  * Neutral value for a factor whose input is missing. Deliberately mid-scale:

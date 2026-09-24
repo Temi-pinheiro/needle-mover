@@ -35,6 +35,7 @@ const PROBES: Probe[] = [
   { file: "0006_team_scoping", what: "venture scoped to a Linear team", kind: "column", table: "workspaces", column: "linear_team_id" },
   { file: "0007_also_today_reasons", what: "reasons on also-today items", kind: "column", table: "days", column: "also_today_reasons" },
   { file: "0008_drop_scheduler", what: "scheduler, calendar, push and email removed", kind: "absent", table: "days", column: "brief_sent_at" },
+  { file: "0009_project_priority", what: "project priority ranks projects", kind: "column", table: "projects", column: "priority" },
 ];
 
 async function main() {

@@ -7,8 +7,9 @@ import { currentUser } from "@/lib/supabase/server";
 import { isValidTimezone } from "@/lib/time";
 import { createLinearClient } from "@/lib/linear/client";
 import { VIEWER } from "@/lib/linear/queries";
+import type { Result } from "@/lib/notify";
 
-export type SettingsResult = { ok: boolean; note?: string };
+export type SettingsResult = Result;
 
 /**
  * Every action re-checks the session. Middleware already gates the page, but a
@@ -227,7 +228,7 @@ export async function syncNow(): Promise<SettingsResult> {
     `${targeted} targeted project(s).` +
     (failed.length ? ` ${failed.map((f) => `${f.ventureName} failed`).join(", ")}.` : "");
 
-  return { ok: true, note };
+  return { ok: true, note, level: failed.length ? "warning" : "success" };
 }
 
 /**
@@ -243,5 +244,9 @@ export async function repickToday(): Promise<SettingsResult> {
   const { planToday } = await import("@/app/actions");
   const result = await planToday();
   revalidatePath("/");
-  return { ok: result.ok, note: result.note ?? (result.ok ? "Today re-picked." : undefined) };
+  return {
+    ok: result.ok,
+    level: result.level,
+    note: result.ok && !result.level ? "Today re-picked." : result.note,
+  };
 }

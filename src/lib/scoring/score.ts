@@ -2,10 +2,12 @@ import {
   CARRYOVER_SPLIT_THRESHOLD,
   DEADLINE_HORIZON_DAYS,
   DEFAULT_WEIGHTS,
+  ISSUE_PRIORITY_WITHIN_TIER,
   MOMENTUM_IN_PROGRESS,
   MOMENTUM_PER_CARRYOVER_DAY,
   NEUTRAL,
   PRIORITY_SCORE,
+  SHORTLIST_MAX_PER_PROJECT,
   SHORTLIST_SIZE,
   targetedThreshold,
   UNBLOCKS_SATURATION,
@@ -31,6 +33,29 @@ function daysUntil(iso: string, today: string): number {
 }
 
 /**
+ * The priority half of goal leverage.
+ *
+ * Project priority sets the tier; issue priority only orders within it. Issue
+ * priorities used to be compared directly across projects, which let a minor
+ * project with every issue marked Urgent outrank an Urgent project whose
+ * issues were prioritised honestly — issue priority is relative to its own
+ * project, and says nothing about which project matters.
+ *
+ * The tier gap is 0.25 and the within-tier range at most 15% of the tier, so
+ * the ordering is strict: an Urgent project's lowest issue (≈0.87) beats a
+ * High project's most urgent one (0.75).
+ *
+ * With no project priority synced (before migration 0009), issue priority
+ * stands alone, as it always did.
+ */
+export function priorityTerm(issuePriority: number, projectPriority: number | null | undefined): number {
+  const issue = PRIORITY_SCORE[issuePriority] ?? NEUTRAL;
+  if (projectPriority == null) return issue;
+  const tier = PRIORITY_SCORE[projectPriority] ?? NEUTRAL;
+  return tier * (1 - ISSUE_PRIORITY_WITHIN_TIER + ISSUE_PRIORITY_WITHIN_TIER * issue);
+}
+
+/**
  * Goal leverage: how much this issue moves a project toward its target.
  *
  * Gated on the project having a target date — an issue outside a targeted
@@ -41,7 +66,7 @@ export function goalLeverage(c: Candidate): number {
   const { project, issue } = c;
   if (!project?.targetDate) return 0;
 
-  const priority = PRIORITY_SCORE[issue.priority] ?? NEUTRAL;
+  const priority = priorityTerm(issue.priority, project.priority);
 
   // Share of remaining project scope. Missing estimates are common, so treat
   // an unknown share as neutral rather than as "contributes nothing".
@@ -100,6 +125,34 @@ function renormalise(weights: FactorScores): FactorScores {
 }
 
 /**
+ * The top of the ranking, with no project taking more than its share.
+ *
+ * Issues with no project are not capped — "no project" is not one project.
+ * When the cap leaves the list short (few projects), the best of what was held
+ * back fills it, so a one-project backlog still gets a full shortlist.
+ */
+export function buildShortlist(ranked: ScoredCandidate[]): ScoredCandidate[] {
+  const perProject = new Map<string, number>();
+  const picked: ScoredCandidate[] = [];
+  const heldBack: ScoredCandidate[] = [];
+
+  for (const s of ranked) {
+    if (picked.length >= SHORTLIST_SIZE) break;
+    const project = s.candidate.project?.id;
+    if (project && (perProject.get(project) ?? 0) >= SHORTLIST_MAX_PER_PROJECT) {
+      heldBack.push(s);
+      continue;
+    }
+    if (project) perProject.set(project, (perProject.get(project) ?? 0) + 1);
+    picked.push(s);
+  }
+
+  const filled = [...picked, ...heldBack.slice(0, SHORTLIST_SIZE - picked.length)];
+  // Keep ranking order, so the prompt still reads highest score first.
+  return filled.sort((a, b) => ranked.indexOf(a) - ranked.indexOf(b));
+}
+
+/**
  * Score every candidate and return the ranked list plus the shortlist Claude
  * chooses from.
  *
@@ -146,7 +199,7 @@ export function scoreAll(
 
   return {
     ranked,
-    shortlist: ranked.slice(0, SHORTLIST_SIZE),
+    shortlist: buildShortlist(ranked),
     weights,
     degraded,
     targetedCount,

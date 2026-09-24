@@ -65,6 +65,31 @@ purpose-built card, not a screenshot of the view: a literal capture carries the
 app's chrome and, if the list is open, the other three tasks, which can name
 ventures a recipient was never meant to see.
 
+### Capturing
+
+Press **C** anywhere, or the Capture button in the header, and type what you
+just said you would do. With a Deepgram key set there is a Voice button too.
+
+Each capture lands in the **inbox** as a proposed issue — title, venture,
+project, due date — drafted by a small, fast Claude call. The inbox is a form,
+not a preview: fix whatever is wrong, then Approve or Discard. **Nothing reaches
+Linear until it is approved.** An approved issue is assigned to you, carries
+the original words quoted in its description, and goes straight into the cache
+so it can be ranked without waiting for a sync.
+
+A capture is saved before anything that can fail. If Claude or Deepgram is
+down, the capture still waits in the inbox with a way to retry, and a voice
+clip is kept until the capture is resolved.
+
+Three rules the parse follows:
+
+- **It never guesses a venture.** An unrecognised or ambiguous venture comes
+  back blank for you to choose; a project from the wrong venture is dropped.
+- **Dates are looked up, not worked out.** The prompt carries the next two
+  weeks as a calendar, because the model's own weekday arithmetic filed "by
+  Friday" on a Saturday.
+- **A past due date is dropped**, since it is almost always a misheard weekday.
+
 ### Closing the day
 
 The recap appears in the app and posts to Linear as a project update, one per
@@ -91,12 +116,24 @@ blocked by another open issue.
 
 | Factor | Signal | Weight |
 | --- | --- | --- |
-| Goal leverage | Issue belongs to a project with a target date; issue priority; share of project scope | 38.9% |
+| Goal leverage | Issue belongs to a project with a target date; project priority, then issue priority within it; share of project scope | 38.9% |
 | Deadline pressure | Days until the project target or issue due date, decaying to zero at 30 days | 27.8% |
 | Unblocks others | How many open issues this one blocks, saturating at 3 | 16.7% |
 | Momentum | Already in progress, plus a boost per consecutive carry-over day | 16.6% |
 
 Two rules that matter more than the numbers:
+
+**Project priority ranks projects; issue priority only ranks within one.**
+Issue priorities are relative to their own project, so comparing them across
+projects let a minor project with every issue marked Urgent outrank an Urgent
+project whose issues were prioritised honestly. Project priority sets the tier
+and issue priority moves an issue at most 15% within it, which is less than the
+gap between tiers — so the order between projects is strict.
+
+**No project crowds out the others.** At most 5 of the 15 shortlist places go
+to one project, and at most 2 of the day's four tasks. Scores between equally
+urgent projects are nearly flat, so without these the project with the biggest
+backlog fills the shortlist and the day.
 
 **Missing estimates score neutral, not zero.** Penalising an unestimated issue
 would bury most of a real backlog.
@@ -121,7 +158,8 @@ projects were kept.
 | --- | --- | --- |
 | Linear | Read issues, projects, targets and relations. Update issue state. Post project updates. | One personal API key per team, encrypted at rest |
 | Supabase | Database and sign-in | Google, restricted to one address |
-| Claude | Ranking and the recap narrative | API key |
+| Claude | Ranking, the recap narrative, and parsing captures | API key |
+| Deepgram | Transcribing voice captures. Optional — without it the mic does not appear. | API key |
 
 Linear webhooks are optional and keep the cache fresh between plans.
 
@@ -130,6 +168,16 @@ Linear webhooks are optional and keep the cache fresh between plans.
 - **Daily pick:** one call with the shortlist and project targets, returning
   structured JSON.
 - **Recap:** one call at close of day.
+- **Capture:** one small call per capture on a fast model. It needs no depth,
+  and it runs many times a day where the pick runs once.
+
+### Speech to text
+
+Deepgram Nova-3, chosen over a hosted Whisper for *keyterm prompting*: venture,
+project, client and people names are exactly what a general model mishears,
+and Nova-3 can be told them per request. Venture and project names are sent
+automatically; `DEEPGRAM_KEYTERMS` adds the names Linear does not know.
+Claude's API takes no audio, so this is the one extra service voice costs.
 
 ## What was removed, and why
 
@@ -162,7 +210,7 @@ database.
 | 1. Core pick | Sign-in, Linear sync, scoring plus the Claude pick, the Now view | Done |
 | 2. Full picture | All teams, webhooks, progress snapshots, close day with a recap | Done |
 | 3. Sharing | The share card. Guest links were largely replaced by posting the recap to Linear, where collaborators already are. | Partly done |
-| 4. Capture | Quick-capture text and voice, parsed by Claude into proposed issues, held in an approval inbox until approved | Not started |
+| 4. Capture | Quick-capture text and voice, parsed by Claude into proposed issues, held in an approval inbox until approved | Built; not yet used for real |
 | 5. Tuning | The three-day split prompt, the swap log, weights adjusted from what actually gets swapped away | Not started |
 
 **Out of scope:** reading chat apps directly, a native mobile app, and multiple

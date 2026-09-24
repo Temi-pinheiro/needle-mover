@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { listTeams, setWorkspaceTeam, type TeamOption } from "@/app/settings/actions";
+import { notify, notifyError } from "@/lib/notify";
 
 /**
  * Which Linear team a venture covers.
@@ -20,7 +21,6 @@ export function TeamScope({
   const [open, setOpen] = useState(false);
   const [teams, setTeams] = useState<TeamOption[] | null>(null);
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
 
   function openPicker() {
     setOpen(true);
@@ -29,7 +29,7 @@ export function TeamScope({
       try {
         setTeams(await listTeams(workspaceId));
       } catch (err) {
-        setNote(err instanceof Error ? err.message : String(err));
+        notifyError(err);
         setTeams([]);
       }
     });
@@ -38,7 +38,7 @@ export function TeamScope({
   function choose(team: TeamOption | null) {
     start(async () => {
       const result = await setWorkspaceTeam(workspaceId, team);
-      setNote(result.note ?? null);
+      notify(result);
       if (result.ok) setOpen(false);
     });
   }
@@ -90,7 +90,6 @@ export function TeamScope({
           Close
         </button>
       </div>
-      {note && <p className="max-w-[34ch] text-right text-[12px] text-ink-faint">{note}</p>}
     </div>
   );
 }

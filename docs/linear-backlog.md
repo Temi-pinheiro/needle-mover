@@ -605,7 +605,7 @@ A record button producing an audio file, stored in Supabase Storage and deleted 
 Depends on choosing a speech-to-text provider — Claude's API does not take audio input, so this is a separate service.
 
 @@ISSUE | Choose a speech-to-text provider
-state: backlog
+state: done
 milestone: Phase 4 — Capture
 labels: capture, ops
 priority: 3
@@ -613,6 +613,8 @@ priority: 3
 An open question from the original spec that was never settled, and it blocks voice capture.
 
 Needs: accurate on short, informal, accented speech with product and client names in it; cheap at maybe a dozen clips a day; and a plain HTTP API. Worth weighing a hosted Whisper endpoint against a dedicated speech API, on accuracy for proper nouns rather than on price — the volume is too low for cost to decide it.
+
+Decided 2026-09-22: Deepgram Nova-3. Keyterm prompting lets each request carry the venture, project and client names, which is the proper-noun problem stated directly. Optional: without a key the mic does not appear.
 
 @@ISSUE | Claude parses each capture into a proposed issue
 state: backlog

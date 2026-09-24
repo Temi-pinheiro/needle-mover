@@ -254,3 +254,68 @@ body {
     filter: none;
   }
 }
+
+/*
+  Quick capture. A native <dialog>, so focus trapping and Escape come free.
+  It rises a few pixels and fades — it is summoned constantly, so it has to be
+  quick and must not draw attention to its own arrival.
+*/
+dialog.capture {
+  margin: 14vh auto auto;
+  width: min(36rem, calc(100vw - 2rem));
+  max-width: none;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0;
+}
+
+dialog.capture[open] {
+  animation: capture-in 180ms var(--ease-out) both;
+}
+
+dialog.capture::backdrop {
+  background: rgb(0 0 0 / 0.18);
+}
+
+@keyframes capture-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The recording dot: the one thing here that is allowed to move on its own. */
+@keyframes recording {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.recording-dot {
+  animation: recording 1.2s ease-in-out infinite;
+}
+
+kbd.key {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  color: var(--ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.capture[open] {
+    animation: none;
+  }
+  .recording-dot {
+    animation: none;
+  }
+}

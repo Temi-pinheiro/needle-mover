@@ -7,6 +7,7 @@ import {
   setWorkspaceFlag,
   type SettingsResult,
 } from "@/app/settings/actions";
+import { notify } from "@/lib/notify";
 
 /** Submits a server action and shows whatever it says back. */
 export function ActionForm({
@@ -19,11 +20,10 @@ export function ActionForm({
   children: React.ReactNode;
 }) {
   const [pending, start] = useTransition();
-  const [result, setResult] = useState<SettingsResult | null>(null);
 
   return (
     <form
-      action={(formData) => start(async () => setResult(await action(formData)))}
+      action={(formData) => start(async () => notify(await action(formData)))}
       className="space-y-5"
     >
       {children}
@@ -35,14 +35,6 @@ export function ActionForm({
         >
           {pending ? "Saving…" : submitLabel}
         </button>
-        {result && (
-          <p
-            role="status"
-            className={`text-[13px] ${result.ok ? "text-pale-green-ink" : "text-pale-red-ink"}`}
-          >
-            {result.note}
-          </p>
-        )}
       </div>
     </form>
   );
@@ -131,7 +123,10 @@ export function InstantToggle({
           setOn(next);
           start(async () => {
             const result = await setWorkspaceFlag(workspaceId, field, next);
-            if (!result.ok) setOn(!next); // put it back if the write failed
+            if (!result.ok) {
+              setOn(!next); // put it back if the write failed
+              notify(result, "Could not save that.");
+            }
           });
         }}
         className="h-4 w-4 accent-[var(--cta)]"
@@ -152,7 +147,6 @@ export function RemoveWorkspace({
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
 
   if (!open) {
     return (
@@ -176,7 +170,7 @@ export function RemoveWorkspace({
       />
       <button
         disabled={pending}
-        onClick={() => start(async () => setNote((await removeWorkspace(workspaceId, value)).note ?? null))}
+        onClick={() => start(async () => notify(await removeWorkspace(workspaceId, value)))}
         className="pressable rounded-lg bg-pale-red-ink px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
       >
         Remove
@@ -185,13 +179,11 @@ export function RemoveWorkspace({
         onClick={() => {
           setOpen(false);
           setValue("");
-          setNote(null);
         }}
         className="pressable px-2 py-1.5 text-[13px] text-ink-muted"
       >
         Cancel
       </button>
-      {note && <p className="w-full text-right text-[12px] text-pale-red-ink">{note}</p>}
     </div>
   );
 }
@@ -199,18 +191,16 @@ export function RemoveWorkspace({
 /** Disconnecting the calendar, with the result shown rather than swallowed. */
 export function DisconnectCalendar() {
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col items-end gap-2">
       <button
         disabled={pending}
-        onClick={() => start(async () => setNote((await disconnectCalendar()).note ?? null))}
+        onClick={() => start(async () => notify(await disconnectCalendar()))}
         className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] text-btn-ink transition-colors hover:bg-btn-face-hover disabled:opacity-50"
       >
         {pending ? "Disconnecting…" : "Disconnect"}
       </button>
-      {note && <p className="text-[12px] text-ink-faint">{note}</p>}
     </div>
   );
 }

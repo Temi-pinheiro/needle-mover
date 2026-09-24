@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { reopenToday } from "@/app/actions";
+import { notify } from "@/lib/notify";
 
 /**
  * Getting back to the Now view after closing.
@@ -12,15 +13,6 @@ import { reopenToday } from "@/app/actions";
 export function ReopenDay({ recapWasSent }: { recapWasSent: boolean }) {
   const [armed, setArmed] = useState(false);
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
-
-  if (note) {
-    return (
-      <p role="status" className="text-[13px] leading-relaxed text-ink-muted">
-        {note}
-      </p>
-    );
-  }
 
   if (!armed) {
     return (
@@ -38,7 +30,7 @@ export function ReopenDay({ recapWasSent }: { recapWasSent: boolean }) {
       <button
         disabled={pending}
         onClick={() =>
-          start(async () => setNote((await reopenToday()).note ?? "Reopened. Back to the Now view."))
+          start(async () => notify(await reopenToday()))
         }
         className="pressable rounded-lg bg-cta px-4 py-2 text-[13px] font-medium text-cta-ink hover:bg-cta-hover disabled:opacity-50"
       >

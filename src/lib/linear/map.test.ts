@@ -87,6 +87,13 @@ describe("toProjectRow", () => {
     expect(row.progress).toBe(0.42);
   });
 
+  it("carries project priority, null when Linear sends none", () => {
+    const base = { id: "p", name: "L", state: null, targetDate: null, progress: null };
+    expect(toProjectRow({ ...base, priority: 1 }, "ws1", null).priority).toBe(1);
+    expect(toProjectRow({ ...base, priority: 0 }, "ws1", null).priority).toBe(0);
+    expect(toProjectRow(base, "ws1", null).priority).toBeNull();
+  });
+
   it("defaults missing progress to zero", () => {
     const row = toProjectRow({ id: "p", name: "L", state: null, targetDate: null, progress: null }, "ws1", null);
     expect(row.progress).toBe(0);

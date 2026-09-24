@@ -98,7 +98,18 @@ async function syncProjects(
   result.targetedProjects = rows.filter((r) => r.target_date).length;
 
   if (rows.length > 0) {
-    unwrap(await db().from("projects").upsert(rows, { onConflict: "linear_project_id" }).select("id"));
+    let { error } = await db().from("projects").upsert(rows, { onConflict: "linear_project_id" });
+    // Before 0009 is applied there is no priority column. Sync without it
+    // rather than stop syncing: scoring falls back to issue priority.
+    if (error && /priority/.test(error.message)) {
+      const withoutPriority = rows.map((row) => {
+        const rest: Partial<typeof row> = { ...row };
+        delete rest.priority;
+        return rest;
+      });
+      ({ error } = await db().from("projects").upsert(withoutPriority, { onConflict: "linear_project_id" }));
+    }
+    if (error) throw new Error(error.message);
   }
 
   await db().from("projects").delete().eq("workspace_id", workspace.id).lt("synced_at", stamp);

@@ -3,10 +3,12 @@ import {
   deadlinePressure,
   goalLeverage,
   momentum,
+  buildShortlist,
+  priorityTerm,
   scoreAll,
   unblocksOthers,
 } from "./score";
-import { DEFAULT_WEIGHTS, SHORTLIST_SIZE, targetedThreshold } from "./weights";
+import { DEFAULT_WEIGHTS, SHORTLIST_MAX_PER_PROJECT, SHORTLIST_SIZE, targetedThreshold } from "./weights";
 import type { Candidate, CandidateIssue, CandidateProject, ScoringContext } from "./types";
 
 const TODAY = "2026-09-16";
@@ -61,6 +63,44 @@ describe("goalLeverage", () => {
       project: project({ scopeEstimate: 20 }),
     });
     expect(urgentBig).toBeGreaterThan(lowSmall);
+  });
+
+  it("ranks by project priority before issue priority", () => {
+    // An Urgent project's lowest issue beats a Low project's Urgent issue.
+    const urgentProjectLowIssue = goalLeverage({
+      issue: issue({ priority: 4 }),
+      project: project({ priority: 1 }),
+    });
+    const lowProjectUrgentIssue = goalLeverage({
+      issue: issue({ priority: 1 }),
+      project: project({ priority: 4 }),
+    });
+    expect(urgentProjectLowIssue).toBeGreaterThan(lowProjectUrgentIssue);
+  });
+
+  it("still orders issues within one project by issue priority", () => {
+    const urgent = goalLeverage({ issue: issue({ priority: 1 }), project: project({ priority: 2 }) });
+    const medium = goalLeverage({ issue: issue({ priority: 3 }), project: project({ priority: 2 }) });
+    expect(urgent).toBeGreaterThan(medium);
+  });
+
+  it("falls back to issue priority when project priority is not synced", () => {
+    const unsynced = goalLeverage({ issue: issue({ priority: 1 }), project: project({ priority: null }) });
+    const legacy = goalLeverage({ issue: issue({ priority: 1 }), project: project() });
+    expect(unsynced).toBe(legacy);
+    expect(priorityTerm(1, null)).toBe(1);
+  });
+
+  it("never lets issue priority cross a project tier", () => {
+    for (let tier = 1; tier < 4; tier++) {
+      const worstInTier = Math.min(...[0, 1, 2, 3, 4].map((p) => priorityTerm(p, tier)));
+      const bestBelow = Math.max(...[0, 1, 2, 3, 4].map((p) => priorityTerm(p, tier + 1)));
+      expect(worstInTier).toBeGreaterThan(bestBelow);
+    }
+    // A project with no priority set sits below Low.
+    expect(Math.min(...[0, 1, 2, 3, 4].map((p) => priorityTerm(p, 4)))).toBeGreaterThan(
+      Math.max(...[0, 1, 2, 3, 4].map((p) => priorityTerm(p, 0))),
+    );
   });
 
   it("treats a missing estimate as neutral, not as zero contribution", () => {
@@ -221,5 +261,51 @@ describe("scoreAll", () => {
     const [top] = scoreAll(targeted(10), ctx()).ranked;
     const sum = Object.values(top.contributions).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(top.total);
+  });
+});
+
+describe("buildShortlist", () => {
+  const ranked = (spec: Array<[string, string | null]>) =>
+    scoreAll(
+      spec.map(([id, projectId], i) => ({
+        issue: issue({ id, identifier: id, priority: 1, blocksCount: spec.length - i }),
+        project: projectId ? project({ id: projectId, name: projectId }) : null,
+      })),
+      ctx(),
+    ).ranked;
+
+  it("keeps any one project to its share, so a big backlog cannot crowd out the rest", () => {
+    const list = ranked([
+      ...Array.from({ length: 20 }, (_, i) => [`BIG-${i}`, "big"] as [string, string]),
+      ["SMALL-1", "small"],
+    ]);
+    // SMALL-1 ranks last of 21, so a plain top 15 would drop it.
+    expect(list.findIndex((s) => s.candidate.issue.identifier === "SMALL-1")).toBe(20);
+    const shortlist = buildShortlist(list);
+    expect(shortlist).toHaveLength(SHORTLIST_SIZE);
+    expect(shortlist.some((s) => s.candidate.issue.identifier === "SMALL-1")).toBe(true);
+  });
+
+  it("caps at the per-project limit when enough other projects compete", () => {
+    const spec: Array<[string, string]> = [];
+    for (const p of ["a", "b", "c", "d"]) for (let i = 0; i < 8; i++) spec.push([`${p}-${i}`, p]);
+    const shortlist = buildShortlist(ranked(spec));
+    expect(shortlist).toHaveLength(SHORTLIST_SIZE);
+    for (const p of ["a", "b", "c", "d"]) {
+      expect(shortlist.filter((s) => s.candidate.project?.id === p).length).toBeLessThanOrEqual(
+        SHORTLIST_MAX_PER_PROJECT,
+      );
+    }
+  });
+
+  it("fills a full list from one project when nothing else competes", () => {
+    const list = ranked(Array.from({ length: 20 }, (_, i) => [`ONE-${i}`, "one"] as [string, string]));
+    expect(buildShortlist(list)).toHaveLength(SHORTLIST_SIZE);
+  });
+
+  it("stays in ranking order", () => {
+    const list = ranked(Array.from({ length: 20 }, (_, i) => [`X-${i}`, i % 2 ? "odd" : "even"] as [string, string]));
+    const totals = buildShortlist(list).map((s) => s.total);
+    expect(totals).toEqual([...totals].sort((a, b) => b - a));
   });
 });

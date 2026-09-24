@@ -112,6 +112,7 @@ export const ACTIVE_PROJECTS = /* GraphQL */ `
         state
         targetDate
         progress
+        priority
       }
     }
   }
@@ -261,6 +262,50 @@ export const PROJECT_UPDATE_CREATE = /* GraphQL */ `
       projectUpdate {
         id
         url
+      }
+    }
+  }
+`;
+
+/** The teams a project belongs to, for filing an issue in a whole-org venture. */
+export const PROJECT_TEAMS = /* GraphQL */ `
+  query ProjectTeams($projectId: String!) {
+    project(id: $projectId) {
+      id
+      teams(first: 10) {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Creates an issue from an approved capture. Returns the same fields as
+ * OPEN_ISSUES so the result maps straight into the cache with toIssueRow; a
+ * brand-new issue has no relations, so those are left out.
+ */
+export const CREATE_ISSUE = /* GraphQL */ `
+  mutation CreateIssue($input: IssueCreateInput!) {
+    issueCreate(input: $input) {
+      success
+      issue {
+        id
+        identifier
+        title
+        url
+        priority
+        estimate
+        dueDate
+        updatedAt
+        state {
+          name
+          type
+        }
+        project {
+          id
+        }
       }
     }
   }

@@ -35,6 +35,8 @@ export type Project = {
   progress: number;
   state: string | null;
   scope_estimate: number | null;
+  /** Linear: 0 none, 1 urgent .. 4 low. Null before 0009 or before a sync. */
+  priority: number | null;
   synced_at: string;
 };
 
@@ -97,4 +99,32 @@ export type ProgressSnapshot = {
   moment: "open" | "close";
   progress: number;
   created_at: string;
+};
+
+export type CaptureSource = "text" | "voice";
+export type CaptureStatus = "pending" | "approved" | "discarded";
+
+/**
+ * What Claude proposed, after deterministic repair, and after any edits made
+ * in the inbox. Ids are ours, not Linear's: they are checked against the cache
+ * so a proposal can never name a venture or project that does not exist.
+ */
+export type ProposedIssue = {
+  title: string;
+  workspace_id: string | null;
+  project_id: string | null;
+  due_date: string | null;
+  description: string | null;
+};
+
+export type Capture = {
+  id: string;
+  source: CaptureSource;
+  raw_text: string | null;
+  audio_path: string | null;
+  proposed_issue: ProposedIssue | null;
+  status: CaptureStatus;
+  linear_issue_id: string | null;
+  created_at: string;
+  resolved_at: string | null;
 };

@@ -8,6 +8,7 @@ import { planToday } from "./actions";
 import { NowView, type TaskCard } from "@/components/NowView";
 import { DayClosed } from "@/components/DayClosed";
 import { Notice } from "@/components/Notice";
+import { captureChrome } from "@/lib/capture/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,7 @@ export default async function Page() {
 
     return (
       <DayClosed
+        capture={await captureChrome()}
         date={today}
         summary={day.recap_summary}
         closed={closed}
@@ -134,6 +136,7 @@ export default async function Page() {
 
   return (
     <NowView
+      capture={await captureChrome()}
       dayId={day.id}
       date={today}
       active={toCard(active)}
@@ -156,6 +159,7 @@ export default async function Page() {
             title: issue.title,
             url: issue.url,
             ventureName: ventureById.get(issue.workspace_id) ?? "Unknown",
+            projectName: issue.project_id ? (projectById.get(issue.project_id)?.name ?? null) : null,
             reason: day.also_today_reasons?.[issue.id] ?? "",
             started: state?.started ?? false,
             done: state?.done ?? false,

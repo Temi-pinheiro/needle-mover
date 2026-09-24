@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { notify } from "@/lib/notify";
 import { Check } from "@phosphor-icons/react/dist/ssr/Check";
 import { completeTask, startTask, type ActionResult } from "@/app/actions";
 
@@ -10,6 +11,7 @@ export type AlsoTodayItem = {
   title: string;
   url: string | null;
   ventureName: string;
+  projectName: string | null;
   reason: string;
   started: boolean;
   done: boolean;
@@ -52,18 +54,20 @@ export function AlsoToday({ dayId, items }: { dayId: string; items: AlsoTodayIte
 
 function Row({ dayId, item }: { dayId: string; item: AlsoTodayItem }) {
   const [pending, start] = useTransition();
-  const [note, setNote] = useState<string | null>(null);
-
-  const run = (action: () => Promise<ActionResult>) =>
-    start(async () => setNote((await action()).note ?? null));
+  const run = (action: () => Promise<ActionResult>) => start(async () => notify(await action()));
 
   return (
     <li className={`py-5 ${item.done ? "opacity-55" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-3">
-            <span className="w-[5rem] shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-faint">
-              {item.ventureName}
+            {/* Project, not venture: two projects in one venture otherwise read
+                as the same work. */}
+            <span
+              title={item.projectName ? `${item.projectName} · ${item.ventureName}` : item.ventureName}
+              className="w-[7rem] shrink-0 font-mono text-[10px] uppercase leading-snug tracking-[0.08em] text-ink-faint"
+            >
+              {item.projectName ?? item.ventureName}
             </span>
             <a
               href={item.url ?? "#"}
@@ -77,13 +81,13 @@ function Row({ dayId, item }: { dayId: string; item: AlsoTodayItem }) {
             </a>
           </div>
           {item.reason && !item.done && (
-            <p className="ml-[5.75rem] mt-2 max-w-[54ch] text-[13px] leading-relaxed text-ink-muted">
+            <p className="ml-[7.75rem] mt-2 max-w-[54ch] text-[13px] leading-relaxed text-ink-muted">
               {item.reason}
             </p>
           )}
         </div>
 
-        <div className="ml-[5.75rem] flex shrink-0 items-center gap-2">
+        <div className="ml-[7.75rem] flex shrink-0 items-center gap-2">
           {item.done ? (
             <span className="flex items-center gap-1.5 text-[12.5px] text-pale-green-ink">
               <Check size={12} weight="bold" />
@@ -108,11 +112,6 @@ function Row({ dayId, item }: { dayId: string; item: AlsoTodayItem }) {
         </div>
       </div>
 
-      {note && (
-        <p role="status" className="ml-[5.75rem] mt-2.5 text-[12px] text-pale-yellow-ink">
-          {note}
-        </p>
-      )}
     </li>
   );
 }

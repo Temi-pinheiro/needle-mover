@@ -72,6 +72,7 @@ export async function loadCandidates(): Promise<Candidate[]> {
               targetDate: project.target_date,
               progress: project.progress,
               scopeEstimate: project.scope_estimate,
+              priority: project.priority ?? null,
             }
           : null,
       };

@@ -5,7 +5,9 @@ import { db } from "@/lib/db/client";
 import { logEvent } from "@/lib/day";
 import { moveIssueTo } from "@/lib/linear/mutations";
 
-export type ActionResult = { ok: boolean; note?: string };
+import type { Level, Result } from "@/lib/notify";
+
+export type ActionResult = Result;
 
 /**
  * The three Now-view actions, plus swap.
@@ -19,30 +21,36 @@ export async function startTask(dayId: string, issueId: string): Promise<ActionR
   await logEvent(dayId, "started", { issueId });
 
   let note: string | undefined;
+  let level: Level | undefined;
   try {
     const result = await moveIssueTo(issueId, "started");
     note = result.note;
+    level = result.level;
   } catch (err) {
     note = `Marked here, but Linear did not update: ${err instanceof Error ? err.message : String(err)}`;
+    level = "warning";
   }
 
   revalidatePath("/");
-  return { ok: true, note };
+  return { ok: true, note, level };
 }
 
 export async function completeTask(dayId: string, issueId: string): Promise<ActionResult> {
   await logEvent(dayId, "done", { issueId });
 
   let note: string | undefined;
+  let level: Level | undefined;
   try {
     const result = await moveIssueTo(issueId, "completed");
     note = result.note;
+    level = result.level;
   } catch (err) {
     note = `Marked here, but Linear did not update: ${err instanceof Error ? err.message : String(err)}`;
+    level = "warning";
   }
 
   revalidatePath("/");
-  return { ok: true, note };
+  return { ok: true, note, level };
 }
 
 export async function blockTask(
@@ -101,7 +109,9 @@ export async function planToday(): Promise<ActionResult> {
     if (result.status === "no-candidates") {
       return { ok: false, note: "Nothing open and unblocked is assigned to you right now." };
     }
-    return { ok: true, note: result.repairs.length ? `Adjusted: ${result.repairs.join("; ")}` : undefined };
+    return result.repairs.length
+      ? { ok: true, note: `Picked, with adjustments: ${result.repairs.join("; ")}`, level: "info" }
+      : { ok: true, note: "Today is picked." };
   } catch (err) {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };
   }
@@ -115,15 +125,16 @@ export async function closeToday(): Promise<ActionResult> {
     revalidatePath("/");
 
     if (result.status === "already-closed") {
-      return { ok: true, note: "Today was already closed." };
+      return { ok: true, note: "Today was already closed.", level: "info" };
     }
+    // A note here means some project updates did not reach Linear.
+    if (result.note) return { ok: true, note: result.note, level: "warning" };
     return {
       ok: true,
       note:
-        result.note ??
-        (result.postedUpdates > 0
+        result.postedUpdates > 0
           ? `Day closed. ${result.postedUpdates} project update(s) posted to Linear.`
-          : "Day closed."),
+          : "Day closed.",
     };
   } catch (err) {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };
@@ -139,7 +150,7 @@ export async function reopenToday(): Promise<ActionResult> {
     const settings = await getSettings();
     const result = await reopenDay(localDate(new Date(), settings.timezone));
     revalidatePath("/");
-    return { ok: result.reopened, note: result.note };
+    return { ok: result.reopened, note: result.note ?? "Reopened." };
   } catch (err) {
     return { ok: false, note: err instanceof Error ? err.message : String(err) };
   }

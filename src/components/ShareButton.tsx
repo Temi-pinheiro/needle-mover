@@ -2,9 +2,8 @@
 
 import { useRef, useState } from "react";
 import { toBlob } from "html-to-image";
+import { toast } from "sonner";
 import { ShareCard, type ShareCardProps } from "./ShareCard";
-
-type State = "idle" | "working" | "copied" | "downloaded" | "failed";
 
 /**
  * Copies a picture of today's task to the clipboard.
@@ -19,11 +18,11 @@ type State = "idle" | "working" | "copied" | "downloaded" | "failed";
  */
 export function ShareButton(props: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<State>("idle");
+  const [working, setWorking] = useState(false);
 
   async function share() {
     if (!cardRef.current) return;
-    setState("working");
+    setWorking(true);
 
     try {
       const blob = await toBlob(cardRef.current, {
@@ -35,7 +34,7 @@ export function ShareButton(props: ShareCardProps) {
 
       try {
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        setState("copied");
+        toast.success("Copied to clipboard.");
       } catch {
         // Clipboard refused. Hand over the file instead of failing.
         const url = URL.createObjectURL(blob);
@@ -44,31 +43,23 @@ export function ShareButton(props: ShareCardProps) {
         link.download = `needle-mover-${props.date}.png`;
         link.click();
         URL.revokeObjectURL(url);
-        setState("downloaded");
+        toast.info("The clipboard refused the image, so it was downloaded instead.");
       }
     } catch {
-      setState("failed");
+      toast.error("Could not render the share card.");
     }
 
-    setTimeout(() => setState("idle"), 2600);
+    setWorking(false);
   }
-
-  const label = {
-    idle: "Share",
-    working: "Rendering…",
-    copied: "Copied to clipboard",
-    downloaded: "Downloaded",
-    failed: "Could not render it",
-  }[state];
 
   return (
     <>
       <button
         onClick={share}
-        disabled={state === "working"}
+        disabled={working}
         className="pressable rounded-lg border border-btn-border bg-btn-face px-4 py-2 text-[13px] font-medium text-btn-ink hover:bg-btn-face-hover disabled:opacity-50"
       >
-        {label}
+        {working ? "Rendering…" : "Share"}
       </button>
 
       {/* Off-screen, not display:none — a hidden element has nothing to measure. */}

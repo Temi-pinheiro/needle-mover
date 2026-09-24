@@ -52,3 +52,20 @@ export function Toggle({ open, className = "" }: { open: boolean; className?: st
     </svg>
   );
 }
+
+export function Mic({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" className={className} aria-hidden {...base}>
+      <rect x="6" y="2" width="4" height="7.5" rx="2" />
+      <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" />
+    </svg>
+  );
+}
+
+export function Stop({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" className={className} aria-hidden {...base}>
+      <rect x="4.5" y="4.5" width="7" height="7" rx="1" />
+    </svg>
+  );
+}

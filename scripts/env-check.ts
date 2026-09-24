@@ -17,12 +17,22 @@ const KEYS = [
   "GOOGLE_CLIENT_SECRET",
 ];
 
+/** Features that switch off cleanly without these, so absence is not a problem. */
+const OPTIONAL: Record<string, string> = {
+  DEEPGRAM_API_KEY: "voice capture off",
+  DEEPGRAM_KEYTERMS: "no extra names for transcription",
+};
+
 console.log("\nHow the runtime parses .env.local\n");
 let problems = 0;
 
-for (const key of KEYS) {
+for (const key of [...KEYS, ...Object.keys(OPTIONAL)]) {
   const raw = process.env[key];
   if (!raw) {
+    if (key in OPTIONAL) {
+      console.log(`  ${key.padEnd(30)} not set (${OPTIONAL[key]})`);
+      continue;
+    }
     console.log(`  ${key.padEnd(30)} MISSING`);
     problems++;
     continue;
@@ -31,7 +41,8 @@ for (const key of KEYS) {
   const issues: string[] = [];
   if (raw.includes("#")) issues.push("contains # — probably a trailing comment");
   if (raw !== raw.trim()) issues.push("has surrounding whitespace");
-  if (/\s/.test(raw.trim())) issues.push("contains a space");
+  // Keyterms are names, and names have spaces in them.
+  if (key !== "DEEPGRAM_KEYTERMS" && /\s/.test(raw.trim())) issues.push("contains a space");
   if (raw.includes("<") || raw.includes(">")) issues.push("looks like an unfilled placeholder");
 
   // A trailing slash on the origin produces `https://host//auth/callback`,

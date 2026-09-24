@@ -2,7 +2,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { anthropic, MODELS } from "./client";
 import { PickSchema, type Pick } from "./schema";
 import { resolvePick, shortlistRefs, type ResolvedPick } from "./validate";
-import { ALSO_TODAY_MAX_VENTURES } from "./validate";
+import { ALSO_TODAY_MAX_VENTURES, MAX_PER_PROJECT } from "./validate";
 import { CARRYOVER_SPLIT_THRESHOLD } from "@/lib/scoring/weights";
 import type { ScoredCandidate, ScoringResult } from "@/lib/scoring/types";
 
@@ -11,6 +11,14 @@ export type PickContext = {
   today: string;
   timezone: string;
   scoring: ScoringResult;
+};
+
+const PRIORITY_LABEL: Record<number, string> = {
+  0: "no priority",
+  1: "Urgent",
+  2: "High",
+  3: "Medium",
+  4: "Low",
 };
 
 const SYSTEM = `You choose the day's work for a founder running several ventures at once.
@@ -25,8 +33,11 @@ Rules, all of which are hard requirements:
 - The first step is one physical action that takes under 10 minutes and starts with a verb. It must be something you could do without deciding anything else first. Good: "Open the Meridian pricing doc and list three tiers." Bad: "Think about pricing", "Start the pricing work".
 - The reason is one or two sentences naming the project target the needle mover advances and why it outranked the runners-up. Do not restate the score.
 - The three other tasks are drawn from at most ${ALSO_TODAY_MAX_VENTURES} ventures and exclude the needle mover. Return fewer than three if fewer are genuinely worth the day.
+- No project supplies more than ${MAX_PER_PROJECT} of the four tasks, needle mover included. When several projects have targets close together, the day should visibly move more than one of them; one project filling the list reads as if nothing else is due.
 - Each of those three carries one short clause saying why it earned a place, written to be read once the needle mover is already finished. Say what it unblocks or what it is running out of time against. "Unblocks the webhook and the first real brief" is useful; "important task" is not.
 - The plain focus line describes the needle mover to a friend: no venture names, client names, product names or jargon. One short sentence.
+
+Project priority is the founder's own ranking of which projects matter; issue priority only says what matters inside one project. An Urgent issue in a Low-priority project is not more important than a Medium issue in an Urgent project.
 
 Prefer the task that unblocks a target over the task that is merely urgent. A high score with a distant target is worth less than a moderate score on a target that lands this month.
 
@@ -54,7 +65,9 @@ export function renderShortlist(shortlist: ScoredCandidate[]): string {
       ];
       if (project) {
         bits.push(
-          `   project: ${project.name} — target ${project.targetDate ?? "none"}, ${Math.round(project.progress * 100)}% complete`,
+          `   project: ${project.name} — ${
+            project.priority != null ? `${PRIORITY_LABEL[project.priority] ?? "unknown"} priority, ` : ""
+          }target ${project.targetDate ?? "none"}, ${Math.round(project.progress * 100)}% complete`,
         );
       } else {
         bits.push("   project: none (no target to advance)");

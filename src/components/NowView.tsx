@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { blockTask, completeTask, startTask, type ActionResult } from "@/app/actions";
 import { ArrowUpRight, Check, Slash } from "./icons";
+import { notify } from "@/lib/notify";
 import { AlsoToday, type AlsoTodayItem } from "./AlsoToday";
 import { CloseDay } from "./CloseDay";
 import { ShareButton } from "./ShareButton";
 import { HeaderNav } from "./HeaderNav";
+import type { CaptureChrome } from "@/lib/capture/pipeline";
 
 export type TaskCard = {
   id: string;
@@ -32,6 +34,7 @@ export type NowViewProps = {
   needsSplit: boolean;
   degraded: boolean;
   alsoToday: AlsoTodayItem[];
+  capture?: CaptureChrome;
 };
 
 export function NowView(props: NowViewProps) {
@@ -42,7 +45,6 @@ export function NowView(props: NowViewProps) {
 
   const [pending, startTransition] = useTransition();
   const [askingReason, setAskingReason] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
   // Drives the blur-crossfade when the card is about to be replaced.
   const [swapping, setSwapping] = useState(false);
   const reasonRef = useRef<HTMLInputElement>(null);
@@ -54,8 +56,7 @@ export function NowView(props: NowViewProps) {
   function run(action: () => Promise<ActionResult>, opts: { swaps?: boolean } = {}) {
     if (opts.swaps) setSwapping(true);
     startTransition(async () => {
-      const result = await action();
-      setNote(result.note ?? null);
+      notify(await action());
       setSwapping(false);
     });
   }
@@ -69,7 +70,7 @@ export function NowView(props: NowViewProps) {
 
   return (
     <main className="relative z-0 mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 md:py-24">
-      <HeaderNav eyebrow="Today’s needle mover" date={props.date} />
+      <HeaderNav eyebrow="Today’s needle mover" date={props.date} capture={props.capture} />
 
       <div className="grid gap-6 md:grid-cols-12">
         {/* ---------------------------------------------------- the card -- */}
@@ -80,9 +81,14 @@ export function NowView(props: NowViewProps) {
             }`}
             style={{ "--index": 1 } as React.CSSProperties}
           >
+            {/* The project leads: two projects in one venture otherwise wear the
+                same tag, and read as the same work. */}
             <div className="mb-7 flex flex-wrap items-center gap-2.5">
-              <Tag>{active.ventureName}</Tag>
-              <span className="font-mono text-[11px] text-ink-faint">{active.identifier}</span>
+              <Tag>{active.projectName ?? active.ventureName}</Tag>
+              <span className="font-mono text-[11px] text-ink-faint">
+                {active.projectName ? `${active.ventureName} · ` : ""}
+                {active.identifier}
+              </span>
             </div>
 
             <h1 className="editorial text-[2.5rem] text-ink sm:text-[3.25rem]">
@@ -165,11 +171,6 @@ export function NowView(props: NowViewProps) {
                   </div>
                 )}
 
-                {note && (
-                  <p role="status" className="mt-4 text-xs leading-relaxed text-pale-yellow-ink">
-                    {note}
-                  </p>
-                )}
               </div>
             )}
           </article>
